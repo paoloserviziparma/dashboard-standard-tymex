@@ -1,0 +1,23 @@
+# File non necessari all'app: non vanno caricati su Railway con "railway up"
+
+# Credenziali (sul server arrivano dalle variabili GOOGLE_CREDENTIALS_JSON / _B64)
+credentials.json.txt
+tymex-*.json
+
+# Dati e documenti di lavoro
+*.csv
+*.xlsx
+*.pdf
+Notaspese/
+
+# Copie di sicurezza
+_backup_*/
+
+# Output di compilazione e file locali
+bin/
+obj/
+.vs/
+.claude/
+desktop.ini
+*.user
+*.suo

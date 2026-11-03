@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guida alla Dashboard — Tymex</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f6fa; color: #222; }
+
+        header {
+            background: linear-gradient(135deg, #1b3a5c, #3B5BDB);
+            color: white;
+            padding: 28px 48px;
+        }
+        header h1 { font-size: 26px; font-weight: 700; }
+        header p  { margin-top: 6px; font-size: 14px; opacity: .8; }
+
+        .toc {
+            background: white;
+            border-left: 4px solid #3B5BDB;
+            margin: 32px 48px 0;
+            padding: 20px 28px;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        .toc h2 { font-size: 14px; font-weight: 700; color: #3B5BDB; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+        .toc ol  { padding-left: 18px; }
+        .toc li  { margin: 5px 0; }
+        .toc a   { color: #1b3a5c; text-decoration: none; font-size: 14px; }
+        .toc a:hover { text-decoration: underline; }
+
+        main { max-width: 1100px; margin: 0 auto; padding: 32px 48px 64px; }
+
+        .step {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,.09);
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 22px 28px;
+            border-bottom: 1px solid #eee;
+            background: #f9faff;
+        }
+        .step-num {
+            background: #3B5BDB;
+            color: white;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px;
+            flex-shrink: 0;
+        }
+        .step-header h2 { font-size: 18px; font-weight: 700; color: #1b3a5c; }
+        .step-header p  { font-size: 13px; color: #666; margin-top: 2px; }
+
+        .step-body { padding: 24px 28px; }
+        .step-body p { font-size: 14px; line-height: 1.7; margin-bottom: 12px; color: #333; }
+        .step-body ul, .step-body ol { padding-left: 20px; margin-bottom: 14px; }
+        .step-body li { font-size: 14px; line-height: 1.7; margin-bottom: 4px; }
+
+        .screenshot {
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #dde;
+            box-shadow: 0 2px 8px rgba(0,0,0,.1);
+        }
+        .screenshot img { width: 100%; display: block; }
+        .screenshot figcaption {
+            background: #f0f2f8;
+            padding: 8px 14px;
+            font-size: 12px;
+            color: #555;
+            border-top: 1px solid #dde;
+        }
+
+        .callout {
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .callout.info  { background: #e8f0fe; border-left: 4px solid #3B5BDB; }
+        .callout.tip   { background: #e8f5e9; border-left: 4px solid #2e7d32; }
+        .callout.warn  { background: #fff3e0; border-left: 4px solid #f57c00; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+        .badge.blu     { background: #3B5BDB; color: white; }
+        .badge.verde   { background: #2e7d32; color: white; }
+        .badge.viola   { background: #6a3d99; color: white; }
+        .badge.teal    { background: #0d7377; color: white; }
+        .badge.arancio { background: #b34700; color: white; }
+        .badge.grigio  { background: #555; color: white; }
+
+        table.legend { border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+        table.legend td { padding: 5px 12px; }
+        .dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+        .dot.green  { background: #c8e6c9; border: 1px solid #2e7d32; }
+        .dot.yellow { background: #fff9c4; border: 1px solid #f9a825; }
+        .dot.red    { background: #ffcdd2; border: 1px solid #c62828; }
+
+        footer { text-align: center; padding: 24px; font-size: 12px; color: #aaa; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Guida alla consultazione della Dashboard <span class="nome-cliente">Tymex</span></h1>
+    <p>Rilevazione ore — Manuale operatore passo passo</p>
+</header>
+
+<div class="toc" style="max-width:1100px;margin:32px auto 0;">
+    <h2>Indice</h2>
+    <ol>
+        <li><a href="#s1">Accesso alla dashboard</a></li>
+        <li><a href="#s2">Schermata principale — Cruscotto Generale</a></li>
+        <li><a href="#s3">Sezione Rapportini — consultazione e filtri</a></li>
+        <li><a href="#s4">Esportare i rapportini in Excel</a></li>
+        <li><a href="#s5">Calendario Ore</a></li>
+        <li><a href="#s6">Commesse</a></li>
+        <li><a href="#s7">Clienti</a></li>
+        <li><a href="#s8">Servizi</a></li>
+        <li><a href="#s9">Pannello ADMIN — Gestione utenti e profilazione accessi ⚠ Feature a pagamento</a></li>
+        <li><a href="#s10">Logout</a></li>
+    </ol>
+</div>
+
+<main>
+
+<!-- ===== STEP 1 ===== -->
+<div class="step" id="s1">
+    <div class="step-header">
+        <div class="step-num">1</div>
+        <div>
+            <h2>Accesso alla dashboard</h2>
+            <p>Come aprire l'applicazione ed effettuare il login</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Apri il browser e vai all'indirizzo fornito dal responsabile.</p>
+        <p>Il browser mostrerà una finestra di autenticazione. Inserisci:</p>
+        <ul>
+            <li><strong>Nome utente</strong> — la tua email aziendale</li>
+            <li><strong>Password</strong> — la password assegnata dall'amministratore</li>
+        </ul>
+        <div class="callout info">
+            Al primo accesso il browser potrebbe mostrare una finestra grigia di sistema con i campi "Username" e "Password". Inserisci le credenziali e premi <strong>Accedi</strong>.
+        </div>
+        <p>Dopo il login, gli operatori vengono portati direttamente alla propria <strong>pagina HOME personale</strong>; gli amministratori accedono al <strong>Cruscotto Generale</strong>.</p>
+    </div>
+</div>
+
+<!-- ===== STEP 2 ===== -->
+<div class="step" id="s2">
+    <div class="step-header">
+        <div class="step-num">2</div>
+        <div>
+            <h2>Schermata principale — Cruscotto Generale</h2>
+            <p>Panoramica ore, commesse e operatori (visibile agli amministratori)</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>La barra di navigazione in alto permette di spostarsi tra le sezioni:</p>
+        <p>
+            <span class="badge blu">CRUSCOTTO GENERALE</span>
+            <span class="badge grigio">CLIENTI</span>
+            <span class="badge verde">RAPPORTINI</span>
+            <span class="badge teal">OPERATORI</span>
+            <span class="badge teal">COMMESSE</span>
+            <span class="badge grigio">SERVIZI</span>
+            <span class="badge viola">CALENDARIO</span>
+            <span class="badge arancio">ADMIN</span>
+        </p>
+        <p>Il cruscotto presenta:</p>
+        <ul>
+            <li><strong>Filtri in cima</strong> — Mese, Cliente (tendina con ricerca per iniziali), Commessa (ricerca testuale), Dal / Al: modificali per restringere la visualizzazione a un periodo, a un cliente o a una commessa specifica.</li>
+            <li><strong>Totali in alto a destra</strong> — Ore totali, numero Rapportini e Valore complessivo nel periodo selezionato.</li>
+            <li><strong>Grafico "Ore lavorate per Commessa"</strong> (colonna sinistra) — barre orizzontali ordinate per ore decrescenti; passando il mouse su una barra si vede il dettaglio.</li>
+            <li><strong>Tabella "Operatore"</strong> (colonna destra) — lista di tutti gli operatori con le rispettive ore nel periodo. Se il costo orario è configurato, compare anche la colonna Costo.</li>
+            <li><strong>Grafico "Ore lavorate per Cliente"</strong> (in basso a destra) — barre ordinate per ore decrescenti. Si aggiorna con le selezioni fatte negli altri riquadri e, cliccando su un cliente, filtra a sua volta tutto il cruscotto.</li>
+        </ul>
+        <div class="callout tip">
+            Per vedere solo un mese specifico, seleziona il mese dal menu <strong>Mese</strong> oppure imposta le date <strong>Dal</strong> e <strong>Al</strong> manualmente.
+        </div>
+    </div>
+</div>
+
+<!-- ===== STEP 3 ===== -->
+<div class="step" id="s3">
+    <div class="step-header">
+        <div class="step-num">3</div>
+        <div>
+            <h2>Rapportini — consultazione e filtri</h2>
+            <p>Elenco dettagliato di ogni registrazione ore</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca il pulsante <span class="badge verde">RAPPORTINI</span> nella barra di navigazione.</p>
+        <p>La tabella mostra per ogni rapportino:</p>
+        <ul>
+            <li><strong>Operatore</strong> — nome del tecnico che ha registrato le ore</li>
+            <li><strong>Commessa</strong> — descrizione del lavoro</li>
+            <li><strong>Codice Commessa</strong> — codice univoco della commessa</li>
+            <li><strong>Servizio / Codice Servizio</strong> — tipo di attività svolta</li>
+            <li><strong>Ore Lavorate</strong> — ore registrate nel rapportino</li>
+            <li><strong>Data Registrazione</strong> — data in cui è stato inserito il rapportino</li>
+        </ul>
+        <p><strong>Come filtrare:</strong></p>
+        <ul>
+            <li>Digita nella casella <strong>"Filtra risultati…"</strong> in alto a destra: la tabella si aggiorna in tempo reale cercando in tutte le colonne.</li>
+            <li>Nel campo <strong>CLIENTE</strong> digita le iniziali e scegli il cliente dalla tendina; per tornare a tutti i clienti scegli "Tutti i clienti" o svuota il campo.</li>
+            <li>Nel campo <strong>COMMESSA</strong> digita il codice o parte della descrizione e scegli la commessa dalla tendina. Se hai scelto un cliente, la tendina mostra solo le sue commesse.</li>
+            <li>Clicca sull'intestazione di una colonna per ordinare i dati (frecce ▲▼).</li>
+            <li>Modifica il campo <strong>Righe</strong> (default 100) per aumentare o ridurre il numero massimo di risultati visualizzati, poi clicca <strong>Ricarica</strong>.</li>
+        </ul>
+        <p>L'ultima riga della griglia, <strong>TOTALE</strong>, riporta sotto la colonna Ore Lavorate il <strong>totale ore</strong> e, se abilitato alla visibilità dei costi, sotto la colonna Costo Orario il <strong>totale importo</strong> (ore × costo orario) delle righe visualizzate.</p>
+        <div class="callout info">
+            Gli operatori non-admin vedono solo i propri rapportini. Gli amministratori vedono quelli di tutti gli operatori.
+        </div>
+    </div>
+</div>
+
+<!-- ===== STEP 4 ===== -->
+<div class="step" id="s4">
+    <div class="step-header">
+        <div class="step-num">4</div>
+        <div>
+            <h2>Esportare i rapportini in Excel</h2>
+            <p>Come scaricare i dati in formato .xlsx</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>La sezione <strong>"Esporta Rapportini"</strong> è sempre visibile sotto la barra di navigazione, indipendentemente dalla sezione aperta.</p>
+        <p><strong>Procedura passo passo:</strong></p>
+        <ol>
+            <li>Nel menu <strong>MESE</strong> seleziona il mese desiderato (o "Tutti i mesi" per l'intero storico).</li>
+            <li>Se vuoi un intervallo preciso, imposta le date nei campi <strong>DAL</strong> e <strong>AL</strong>.</li>
+            <li>Per limitare i dati a un solo cliente o a una sola commessa, selezionali nei campi <strong>CLIENTE</strong> e <strong>COMMESSA</strong>: i filtri valgono sia per l'anteprima sia per l'esportazione.</li>
+            <li>Clicca <strong>VISUALIZZA</strong> per vedere l'anteprima dei rapportini nella tabella sottostante — verifica che i dati siano quelli attesi.</li>
+            <li>Clicca <strong>ESPORTA RAPPORTINI SU EXCEL</strong> per scaricare il file <code>.xlsx</code>.</li>
+        </ol>
+        <div class="callout tip">
+            Il file Excel scaricato contiene esattamente le stesse righe visibili nella tabella, con tutti i campi. Puoi poi aprirlo in Excel o Google Sheets per ulteriori elaborazioni.
+        </div>
+        <div class="callout warn">
+            Se non selezioni alcun filtro il sistema scarica tutti i rapportini disponibili: su periodi lunghi l'operazione può richiedere qualche secondo.
+        </div>
+    </div>
+</div>
+
+<!-- ===== STEP 5 ===== -->
+<div class="step" id="s5">
+    <div class="step-header">
+        <div class="step-num">5</div>
+        <div>
+            <h2>Calendario Ore</h2>
+            <p>Vista mensile con le ore registrate giorno per giorno</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca <span class="badge viola">CALENDARIO</span> per aprire la griglia mensile.</p>
+        <p>La griglia mostra in riga ogni operatore e in colonna ogni giorno del mese. Il numero in ogni cella indica le ore registrate quel giorno.</p>
+        <p><strong>Significato dei colori:</strong></p>
+        <table class="legend">
+            <tr><td><span class="dot green"></span></td><td><strong>Verde</strong> — ore registrate in linea con quelle previste dal contratto</td></tr>
+            <tr><td><span class="dot yellow"></span></td><td><strong>Giallo</strong> — ore registrate inferiori al previsto</td></tr>
+            <tr><td><span class="dot red"></span></td><td><strong>Rosa/Rosso</strong> — ore registrate superiori al previsto</td></tr>
+        </table>
+        <p>La riga <strong>TOTALE</strong> in fondo mostra la somma delle ore di tutti gli operatori per ogni giorno, e il totale generale a destra.</p>
+        <p><strong>Come cambiare mese/anno:</strong> usa i menu <strong>Anno</strong> e <strong>Mese</strong> in cima al calendario. La griglia si aggiorna automaticamente.</p>
+        <div class="callout info">
+            Le celle vuote su giorni feriali indicano che non sono stati inseriti rapportini per quell'operatore in quella giornata.
+        </div>
+    </div>
+</div>
+
+<!-- ===== STEP 6 ===== -->
+<div class="step" id="s6">
+    <div class="step-header">
+        <div class="step-num">6</div>
+        <div>
+            <h2>Commesse</h2>
+            <p>Anagrafica delle commesse attive e archiviate</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca <span class="badge teal">COMMESSE</span> per vedere l'elenco completo delle commesse.</p>
+        <p>Ogni riga rappresenta una commessa con:</p>
+        <ul>
+            <li><strong>Codice Commessa</strong> — identificativo univoco usato anche nei rapportini</li>
+            <li><strong>Descrizione</strong> — nome esteso del lavoro</li>
+            <li><strong>Situazione Commessa</strong> — ATTIVA o CHIUSA</li>
+            <li><strong>Codice Cliente / Ragione Sociale Cliente</strong> — l'azienda committente</li>
+        </ul>
+        <div class="callout tip">
+            Usa la casella <strong>"Filtra risultati…"</strong> per cercare rapidamente una commessa per codice o parola chiave nella descrizione.
+        </div>
+    </div>
+</div>
+
+<!-- ===== STEP 7 ===== -->
+<div class="step" id="s7">
+    <div class="step-header">
+        <div class="step-num">7</div>
+        <div>
+            <h2>Clienti</h2>
+            <p>Anagrafica dei clienti</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca <span class="badge grigio">CLIENTI</span> per l'elenco dei clienti.</p>
+        <p>La tabella contiene per ogni cliente: ragione sociale, indirizzo (CAP, Località, Provincia), paese, codice cliente interno e Partita IVA.</p>
+        <p>Come tutte le tabelle, è filtrabile e ordinabile per colonna. Il pulsante <strong>Esporta Excel</strong> in alto a destra scarica l'elenco in formato <code>.xlsx</code>.</p>
+    </div>
+</div>
+
+<!-- ===== STEP 8 ===== -->
+<div class="step" id="s8">
+    <div class="step-header">
+        <div class="step-num">8</div>
+        <div>
+            <h2>Servizi</h2>
+            <p>Tipologie di attività disponibili per i rapportini</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca <span class="badge grigio">SERVIZI</span> per vedere le tipologie di attività configurate.</p>
+        <p>Ogni riga mostra il codice servizio, la descrizione, se è attivo e se è impostato come predefinito. Questi codici corrispondono a quelli visibili nella colonna "Servizio" dei rapportini.</p>
+    </div>
+</div>
+
+<!-- ===== STEP 9 ===== -->
+<div class="step" id="s9">
+    <div class="step-header">
+        <div class="step-num">9</div>
+        <div>
+            <h2>Pannello ADMIN — Gestione utenti e profilazione accessi</h2>
+            <p>Visibile solo agli amministratori. Include una funzionalità a pagamento.</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca <span class="badge arancio">ADMIN</span> nella barra di navigazione per aprire il pannello di amministrazione (visibile solo agli utenti con ruolo Admin).</p>
+        <p>Il pannello si articola in due schede:</p>
+
+        <h3 style="margin:20px 0 10px;color:#1b3a5c;">Scheda "Utenti"</h3>
+        <p>In questa scheda è possibile:</p>
+        <ul>
+            <li><strong>Aggiungere un nuovo utente</strong> — compilare Username, Password (o generarla automaticamente con il tasto "Genera"), Nome visualizzato e spuntare "Admin" se deve avere accesso completo.</li>
+            <li><strong>Modificare o eliminare</strong> un utente esistente tramite i pulsanti nella tabella.</li>
+            <li><strong>Importare gli operatori da BigQuery</strong> — se compaiono operatori evidenziati in giallo nella casella di avviso, clicca "Aggiungi questi operatori" per creare automaticamente un account per ciascuno di loro.</li>
+        </ul>
+        <div class="callout info">
+            Gli utenti con ruolo <strong>Admin</strong> vedono tutti i dati di tutti gli operatori. Gli utenti senza ruolo Admin vedono solo i dati definiti nella matrice dei permessi (vedi scheda Permessi RLS).
+        </div>
+
+        <h3 style="margin:24px 0 10px;color:#1b3a5c;">Scheda "Permessi RLS" — Profilazione degli accessi</h3>
+        <p>La <strong>Matrice Permessi Operatori</strong> consente di definire, per ogni utente, quali operatori può visualizzare nella dashboard. Le colonne rappresentano gli operatori, le righe gli utenti:</p>
+        <ul>
+            <li><strong>Checkbox spuntata</strong> — l'utente vede i dati di quell'operatore.</li>
+            <li><strong>Checkbox vuota</strong> — i dati di quell'operatore sono nascosti all'utente.</li>
+            <li><strong>Colonna "Costi"</strong> — se spuntata, l'utente può vedere i costi orari degli operatori.</li>
+        </ul>
+        <p>Dopo aver configurato la matrice, clicca <strong>Salva Permessi</strong> per applicare le modifiche.</p>
+
+        <div class="callout warn" style="border-color:#c62828;background:#fff3f3;">
+            <strong>⚠ Funzionalità a pagamento — Piano di abbonamento richiesto</strong><br><br>
+            La <strong>profilazione degli accessi per gli operatori</strong> (scheda Permessi RLS) è una <strong>feature integrativa a pagamento</strong> del servizio Tymex.<br><br>
+            Prima di configurare e utilizzare questa funzionalità, <strong>verificare che il piano di abbonamento attivo la comprenda</strong>. In assenza del piano adeguato la funzione risulta tecnicamente disponibile ma il suo utilizzo non è contrattualmente autorizzato.<br><br>
+            Per informazioni sui piani disponibili contattare: <strong>info@tymex.it</strong>
+        </div>
+    </div>
+</div>
+
+<!-- ===== STEP 10 ===== -->
+<div class="step" id="s10">
+    <div class="step-header">
+        <div class="step-num">10</div>
+        <div>
+            <h2>Logout</h2>
+            <p>Come uscire dalla sessione in sicurezza</p>
+        </div>
+    </div>
+    <div class="step-body">
+        <p>Clicca il pulsante <strong>Logout</strong> in alto a destra nella barra dell'applicazione per chiudere la sessione.</p>
+        <p>Dopo il logout il browser torna alla schermata di login. È consigliabile effettuare sempre il logout quando si lascia incustodita la postazione.</p>
+        <div class="callout warn">
+            Il pulsante Logout è visibile in ogni schermata, accanto al tuo nome utente nell'angolo in alto a destra.
+        </div>
+    </div>
+</div>
+
+</main>
+
+<footer>
+    Guida <span class="nome-cliente">Tymex</span> — Rilevazione ore &nbsp;|&nbsp; Tymex &nbsp;|&nbsp; Aggiornata Giugno 2026
+</footer>
+
+<script>
+// Il nome del cliente arriva dal server (appsettings.json → Cliente:Nome)
+fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(u => {
+    if (!u || !u.cliente) return;
+    document.title = 'Guida alla Dashboard — ' + u.cliente;
+    document.querySelectorAll('.nome-cliente').forEach(el => el.textContent = u.cliente);
+}).catch(() => {});
+</script>
+</body>
+</html>

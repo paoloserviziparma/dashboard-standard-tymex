@@ -1,0 +1,2876 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tymex</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><rect width='36' height='36' rx='8' fill='%236272C8'/><rect x='7' y='18' width='7' height='13' rx='3.5' fill='white'/><rect x='15' y='11' width='7' height='20' rx='3.5' fill='white'/><rect x='23' y='15' width='7' height='16' rx='3.5' fill='white'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #eef2f5; color: #333; }
+
+        /* ---- FONT GLOBALI ---- */
+        h1, h2, h3, h4, h5, h6,
+        .home-greeting, .sidebar-title, .app-title,
+        button, .btn-table, .btn-rapportini, .btn-action,
+        .dash-title, .card h3, .filter-group label,
+        .home-recent-title, .hc-label, .hc-value,
+        .cruscotto-title, .section-title {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+        }
+        table, th, td, input, select, textarea,
+        .home-card, .home-progress-wrap,
+        .rapportini-section, .results-section,
+        .cruscotto, p, span, div {
+            font-family: inherit; /* eredita Inter da body */
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e0a50, #0d0630);
+            color: white; padding: 12px 30px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        header h1 { font-size: 22px; font-weight: 900; display: flex; align-items: center; gap: 12px; letter-spacing: 1px; }
+        .tymex-logo-svg { flex-shrink: 0; }
+        .tymex-title { color: #fff; letter-spacing: 2px; }
+        .tymex-subtitle { font-size: 12px; font-weight: 300; opacity: 0.6; margin-left: 4px; letter-spacing: 0.5px; }
+        .header-user { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+        .header-user span { opacity: 0.85; }
+        .btn-logout { padding: 5px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 5px; font-size: 12px; cursor: pointer; }
+        .btn-logout:hover { background: rgba(255,255,255,0.25); }
+        header span { font-size: 12px; opacity: 0.8; }
+
+        .container { width: 100%; padding: 8px 20px 10px; box-sizing: border-box; }
+
+        .buttons-section {
+            background: white; border-radius: 8px; padding: 8px 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 8px;
+        }
+
+        .btn-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+        .btn-table {
+            padding: 10px 20px; border: none; border-radius: 6px;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s; color: white;
+        }
+        .btn-table:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-table.active { outline: 3px solid #333; outline-offset: 2px; }
+
+        .btn-table[data-table="customers"] { background: #3B5BDB; }
+        .btn-table[data-table="documents"] { background: #2e7d6a; }
+        .btn-table[data-table="operators"] { background: #3d6b99; }
+        .btn-table[data-table="projects"]  { background: #0d7c8c; }
+        .btn-table[data-table="services"]  { background: #557a95; }
+
+        .toolbar {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .toolbar label { font-size: 13px; color: #666; }
+        .toolbar input, .toolbar select {
+            padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;
+        }
+        .toolbar input[type="number"] { width: 80px; }
+
+        .btn-action {
+            padding: 7px 16px; border: none; border-radius: 4px;
+            font-size: 13px; cursor: pointer; color: white; background: #1b3a5c;
+        }
+        .btn-action:hover { background: #122840; }
+        .btn-action.export { background: #3B5BDB; }
+        .btn-action.export:hover { background: #2f4ac0; }
+
+        .results-section {
+            background: white; border-radius: 8px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-height: 200px;
+        }
+        .results-section.cruscotto-mode {
+            padding: 10px;
+            min-height: calc(100vh - 130px);
+        }
+        .results-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .results-header h2 { font-size: 16px; color: #555; }
+        .results-info { font-size: 13px; color: #888; }
+
+        .table-wrapper {
+            overflow-x: scroll; overflow-y: auto;
+            max-height: 70vh;
+        }
+
+        table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        thead th {
+            background: #f8f9fa; padding: 10px 12px; text-align: left;
+            border-bottom: 2px solid #dee2e6; font-weight: 600;
+            position: sticky; top: 0; white-space: nowrap; z-index: 1;
+            cursor: pointer; user-select: none;
+        }
+        thead th:hover { background: #e9ecef; }
+        thead th .sort-arrow { font-size: 10px; margin-left: 4px; color: #aaa; }
+        thead th.sort-asc .sort-arrow { color: #3B5BDB; }
+        thead th.sort-desc .sort-arrow { color: #3B5BDB; }
+        tbody td {
+            padding: 8px 12px; border-bottom: 1px solid #eee;
+            max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        tbody tr:hover { background: #e8f6f8; }
+
+        .loading {
+            display: flex; align-items: center; justify-content: center;
+            padding: 60px; color: #888; font-size: 15px;
+        }
+        .loading .spinner {
+            width: 24px; height: 24px; border: 3px solid #ddd;
+            border-top-color: #3B5BDB; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-right: 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center; padding: 60px; color: #aaa; font-size: 15px;
+        }
+        .error { color: #e53935; background: #fdecea; padding: 12px; border-radius: 6px; }
+
+        .search-box {
+            padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
+            font-size: 13px; width: 220px;
+        }
+
+        /* === CRUSCOTTO === */
+        .cruscotto {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+            grid-template-rows: auto; grid-auto-rows: 300px;
+        }
+        .cruscotto .card {
+            background: white; border-radius: 8px; padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            min-width: 0; min-height: 0; overflow: hidden;
+        }
+        .cruscotto .card h3 {
+            font-size: 13px; color: #555; margin-bottom: 8px; font-weight: 600; flex-shrink: 0;
+        }
+        .cruscotto .card-full { grid-column: 1 / -1; overflow: visible; }
+        .cruscotto .sel-tags:empty { display: none; }
+        .cruscotto .card-chart { min-height: 0; }
+        .cruscotto .card-chart canvas { width: 100%; }
+        .chart-scroll-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+        .cruscotto .filters-row {
+            display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end;
+        }
+        .cruscotto .filter-group { flex: 1 1 120px; min-width: 0; }
+        .cruscotto .filter-group label { display: block; font-size: 10px; color: #888; margin-bottom: 2px; font-weight: 600; white-space: nowrap; }
+        .cruscotto .filter-group select,
+        .cruscotto .filter-group input[type="date"] {
+            width: 100%; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;
+        }
+        .cruscotto .op-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .cruscotto .op-table th {
+            text-align: left; padding: 4px 6px; border-bottom: 2px solid #dee2e6;
+            font-weight: 600; font-size: 11px; color: #666;
+        }
+        .cruscotto .op-table td { padding: 3px 6px; border-bottom: 1px solid #eee; }
+        .cruscotto .op-table tr:hover { background: #e8f6f8; }
+        .cruscotto .op-table .op-check { width: 14px; height: 14px; cursor: pointer; }
+        .cruscotto .op-table .op-total { font-weight: 700; background: #f8f9fa; }
+        .cruscotto .card-op { overflow-y: auto; }
+        #dashTreemap { position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 6px; }
+        .treemap-container { display: flex; flex-wrap: wrap; gap: 4px; min-height: 120px; flex: 1; align-content: stretch; align-items: stretch; }
+        .treemap-block {
+            display: flex; align-items: flex-start; padding: 6px; color: white;
+            font-size: 11px; font-weight: 600; border-radius: 4px; min-height: 60px;
+            position: relative; overflow: hidden;
+        }
+        .treemap-block .tm-label { position: relative; z-index: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .treemap-block .tm-hours {
+            position: absolute; bottom: 6px; left: 8px; font-size: 11px; opacity: 0.9;
+        }
+        .treemap-block .tm-name {
+            position: absolute; top: 6px; left: 8px; font-size: 12px;
+        }
+        .dash-stat {
+            text-align: center; padding: 4px 8px; background: #f8f9fa; border-radius: 6px; white-space: nowrap;
+        }
+        .dash-stat .val { font-size: 15px; font-weight: 700; color: #3B5BDB; }
+        .dash-stat .lbl { font-size: 9px; color: #888; margin-top: 1px; }
+
+        .rapportini-section {
+            background: white; border-radius: 8px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        .rapportini-section h2 { font-size: 16px; color: #555; margin-bottom: 14px; }
+        .rapportini-row {
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        .rapportini-row label { font-size: 13px; color: #666; font-weight: 500; }
+        .rapportini-row input[type="date"] {
+            padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;
+        }
+        .btn-rapportini {
+            padding: 10px 24px; border: none; border-radius: 6px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            color: white; background: linear-gradient(135deg, #3B5BDB, #2f4ac0);
+            transition: all 0.2s;
+        }
+        .btn-rapportini:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,91,219,0.4); }
+        .btn-rapportini:disabled { opacity: 0.6; cursor: wait; transform: none; box-shadow: none; }
+        .rapportini-status { font-size: 13px; color: #888; }
+
+        /* Filtro Cliente: tendina con ricerca */
+        .cliente-combo { position: relative; width: 100%; }
+        .cliente-combo input {
+            width: 100%; padding: 4px 20px 4px 6px; border: 1px solid #ccc; border-radius: 4px;
+            font-size: 13px; box-sizing: border-box; text-overflow: ellipsis;
+        }
+        .cliente-caret {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            font-size: 9px; color: #666; pointer-events: none;
+        }
+        .cliente-dropdown {
+            display: none; position: absolute; top: calc(100% + 2px); left: 0;
+            min-width: 100%; width: max-content; max-width: 420px; max-height: 260px; overflow-y: auto;
+            background: white; border: 1px solid #ddd; border-radius: 6px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.13); z-index: 9999;
+        }
+        .cliente-opt {
+            padding: 6px 10px; cursor: pointer; font-size: 12px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .cliente-opt:hover { background: #f0f4ff; }
+        .cliente-opt.selected { font-weight: 700; color: #3B5BDB; }
+        .cliente-opt.all { color: #666; border-bottom: 1px solid #f0f0f0; }
+        .cliente-empty { padding: 8px; color: #aaa; font-size: 12px; }
+        .rapportini-row .cliente-combo { width: 210px; }
+        .rapportini-row .cliente-combo input { padding: 7px 24px 7px 10px; }
+
+        /* Totali in fondo alla griglia Rapportini */
+        .rapportini-totali td {
+            position: sticky; bottom: 0; z-index: 1; padding: 10px 12px; background: #f8f9fa;
+            box-shadow: inset 0 2px 0 #dee2e6; white-space: nowrap; font-weight: 700; color: #1b3a5c;
+        }
+        .rapportini-note { padding: 6px 12px 0; text-align: right; font-size: 12px; color: #e8710a; }
+
+        /* Cross-filter selection tags */
+        .sel-tags {
+            display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+            min-height: 26px;
+        }
+        .sel-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #d9f2f5; color: #1b3a5c; border-radius: 12px;
+            padding: 2px 10px; font-size: 11px; font-weight: 600;
+            animation: fadeIn 0.2s ease;
+        }
+        .sel-tag .sel-dim { color: #557a95; font-weight: 400; margin-right: 2px; }
+        .sel-tag .sel-x {
+            cursor: pointer; color: #557a95; font-size: 13px; line-height: 1;
+            margin-left: 2px;
+        }
+        .sel-tag .sel-x:hover { color: #c62828; }
+        .btn-reset-sel {
+            background: none; border: 1px solid #ccc; border-radius: 12px;
+            padding: 2px 10px; font-size: 11px; color: #888; cursor: pointer;
+        }
+        .btn-reset-sel:hover { background: #f5f5f5; color: #333; border-color: #999; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        /* Selection highlights */
+        .cruscotto .op-table td.op-name { cursor: pointer; }
+        .cruscotto .op-table td.op-name:hover { color: #3B5BDB; }
+        .cruscotto .op-table tr.op-selected { background: #d9f2f5; }
+        .cruscotto .op-table tr.op-dimmed td { opacity: 0.4; }
+        .treemap-block { cursor: pointer; transition: opacity 0.2s, outline 0.2s; }
+        .treemap-block.tm-selected { outline: 3px solid #fff; outline-offset: -3px; }
+        .treemap-block.tm-dimmed { opacity: 0.3; }
+
+        /* Drill-down detail */
+        .drill-panel {
+            margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px;
+            border-left: 3px solid #1b3a5c; font-size: 12px;
+        }
+        .drill-panel h4 { font-size: 12px; color: #1b3a5c; margin-bottom: 6px; font-weight: 600; }
+        .drill-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .drill-table th {
+            text-align: left; padding: 3px 6px; border-bottom: 2px solid #dee2e6;
+            font-weight: 600; font-size: 11px; color: #666;
+        }
+        .drill-table td { padding: 3px 6px; border-bottom: 1px solid #eee; }
+        .drill-table tr:hover { background: #eef; }
+        .drill-link { color: #3B5BDB; cursor: pointer; text-decoration: underline; }
+        .drill-link:hover { color: #2f4ac0; }
+        .drill-sub { margin-top: 8px; padding: 8px; background: #fff; border-radius: 4px; border-left: 3px solid #3B5BDB; }
+        .drill-sub h4 { color: #3B5BDB; }
+        /* Inline drill-down tree */
+        .op-tree-arrow { display:inline-block; width:16px; font-size:9px; color:#aaa; cursor:pointer; user-select:none; transition:color 0.15s; vertical-align:middle; }
+        .op-tree-arrow:hover { color:#3B5BDB; }
+        .op-drill-comm td { background:#eef4fb; border-bottom:1px solid #d8e6f5; }
+        .op-drill-comm td:first-child { padding-left:24px; }
+        .op-drill-comm:hover td { background:#dbeaf7; }
+        .op-drill-serv td { background:#f4fbf4; border-bottom:1px solid #d8edd8; font-size:11px; color:#555; }
+        .op-drill-serv td:first-child { padding-left:46px; }
+        .op-drill-serv:hover td { background:#e6f5e6; }
+
+        /* Tooltip servizi attivi (COMMESSE) */
+        #serviceTooltip {
+            position: absolute; display: none; background: white; border: 1px solid #ccc;
+            border-radius: 8px; padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+            z-index: 1000; max-width: 420px; font-size: 12px;
+        }
+        #serviceTooltip h4 { font-size: 12px; color: #1b3a5c; margin-bottom: 6px; font-weight: 600; }
+        #serviceTooltip table { width: 100%; border-collapse: collapse; }
+        #serviceTooltip th { text-align: left; padding: 4px 8px; border-bottom: 2px solid #dee2e6; font-size: 11px; color: #666; font-weight: 600; }
+        #serviceTooltip td { padding: 3px 8px; border-bottom: 1px solid #eee; }
+        #serviceTooltip tr:hover { background: #e8f6f8; }
+
+        /* === CALENDARIO === */
+        .calendario-container { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .calendario-selectors { display: flex; gap: 24px; margin-bottom: 18px; }
+        .calendario-selectors .cal-group { display: flex; flex-direction: column; gap: 4px; }
+        .calendario-selectors label { font-weight: 600; font-size: 13px; color: #555; }
+        .calendario-selectors select { padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 140px; }
+        .cal-table-wrap { overflow-x: auto; }
+        .cal-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+        .cal-table th, .cal-table td { border: 1px solid #e0e0e0; padding: 4px 6px; text-align: center; white-space: nowrap; }
+        .cal-table th { background: #f5f7fa; color: #1b3a5c; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+        .cal-table th.cal-op-header { text-align: left; min-width: 140px; position: sticky; left: 0; z-index: 2; background: #eef2f5; }
+        .cal-table td.cal-op { text-align: left; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1; border-right: 2px solid #ccc; }
+        .cal-table td.cal-val { background: #f9f9f9; min-width: 42px; }
+        .cal-table td.cal-val.has-data { background: #e8f5e9; }
+        .cal-table td.cal-ok    { background: #c8e6c9 !important; color: #1b5e20; font-weight: 600; }
+        .cal-table td.cal-under { background: #fff9c4 !important; color: #7a5c00; font-weight: 600; }
+        .cal-table td.cal-over  { background: #ffcdd2 !important; color: #b71c1c; font-weight: 600; }
+        .cal-table td.cal-weekend { background: #f0f0f0; }
+        .cal-table td.cal-total, .cal-table th.cal-total { background: #e3f2fd; font-weight: 700; border-left: 2px solid #90caf9; }
+
+        /* === ADMIN PANEL === */
+        .admin-container { padding: 4px 0; }
+        .admin-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .admin-tab-btn { padding: 8px 20px; border: none; border-radius: 6px 6px 0 0; background: #ddd; color: #555; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .admin-tab-btn.active { background: #1b3a5c; color: white; }
+        .admin-tab-content { background: white; border-radius: 0 8px 8px 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px; }
+        .admin-table th { background: #f5f7fa; color: #1b3a5c; font-weight: 600; padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; }
+        .admin-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .admin-table tr:hover td { background: #f9fbff; }
+        .admin-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px; background: #f5f7fa; border-radius: 8px; margin-bottom: 16px; }
+        .admin-form input, .admin-form select { padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; }
+        .admin-form label { font-size: 12px; color: #555; display: flex; flex-direction: column; gap: 4px; }
+        .admin-btn { padding: 7px 16px; border: none; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .admin-btn-save { background: #2e7d6a; color: white; }
+        .admin-btn-del { background: #c0392b; color: white; }
+        .admin-btn-edit { background: #2980b9; color: white; }
+        .perm-grid-wrap { overflow-x: auto; }
+        .perm-grid { border-collapse: collapse; font-size: 12px; }
+        .perm-grid th, .perm-grid td { border: 1px solid #e0e0e0; padding: 5px 8px; text-align: center; white-space: nowrap; }
+        .perm-grid th.perm-user { text-align: left; min-width: 140px; background: #f5f7fa; position: sticky; left: 0; z-index: 1; }
+        .perm-grid th.perm-op { background: #f5f7fa; color: #1b3a5c; max-width: 100px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+        .perm-grid td.perm-user-cell { text-align: left; font-weight: 500; background: white; position: sticky; left: 0; border-right: 2px solid #ccc; }
+        .perm-grid td input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
+        .perm-all-toggle { font-size: 11px; background: #e8f4fd; border: 1px solid #90caf9; border-radius: 3px; padding: 2px 6px; cursor: pointer; }
+        .perm-all-toggle.active { background: #1b3a5c; color: white; border-color: #1b3a5c; }
+        .perm-save-row { margin-top: 14px; display: flex; gap: 10px; align-items: center; }
+
+        /* === RESPONSIVE === */
+        /* Cruscotto a tutta finestra: i 4 riquadri si dividono lo spazio, senza scroll di pagina */
+        @media (min-width: 769px) and (min-height: 520px) {
+            html:has(.cruscotto) { height: 100%; overflow: hidden; }
+            body:has(.cruscotto) { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+            body:has(.cruscotto) > header { flex-shrink: 0; }
+            body:has(.cruscotto) > .container { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+            body:has(.cruscotto) .buttons-section { flex-shrink: 0; }
+            body:has(.cruscotto) .results-section.cruscotto-mode { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+            body:has(.cruscotto) #resultsContainer { flex: 1; min-height: 0; }
+            .cruscotto { height: 100%; grid-template-rows: auto repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 1024px) {
+            .container { padding: 8px 12px 10px; }
+        }
+        @media (max-width: 768px) {
+            header { flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 16px; }
+            header h1 { font-size: 18px; }
+            .container { padding: 10px; }
+            .buttons-section, .rapportini-section, .results-section { padding: 14px; }
+            .btn-grid { gap: 8px; }
+            .btn-table { padding: 8px 14px; font-size: 13px; }
+            .cruscotto { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .cruscotto .filters-row { flex-direction: column; gap: 10px; }
+            .cruscotto .filter-group { flex: none; min-width: unset; width: 100%; }
+            .results-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .search-box { width: 100% !important; }
+            .toolbar { width: 100%; }
+        }
+        @media (max-width: 480px) {
+            header h1 { font-size: 16px; }
+            .btn-table { padding: 8px 10px; font-size: 12px; flex: 1 1 auto; text-align: center; }
+            .rapportini-row { gap: 8px; }
+            .btn-rapportini { padding: 8px 14px; font-size: 13px; width: 100%; }
+            .rapportini-row input[type="date"] { width: 100%; }
+            .rapportini-row .cliente-combo { width: 100%; }
+            .dash-stat .val { font-size: 18px; }
+        }
+
+        /* ---- HOME PERSONALE ---- */
+        #homeTreemap { position: relative; }
+        .home-page { padding: 8px 0; }
+        .home-greeting { font-size: 22px; font-weight: 700; color: #1b3a5c; margin-bottom: 4px; }
+        .home-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+        .home-cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+        .home-card {
+            background: white; border-radius: 12px; padding: 20px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07); flex: 1; min-width: 160px;
+        }
+        .home-card .hc-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+        .home-card .hc-value { font-size: 28px; font-weight: 800; color: #1b3a5c; line-height: 1; }
+        .home-card .hc-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
+        .home-progress-wrap { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 24px; }
+        .home-progress-label { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 8px; font-weight: 600; }
+        .home-progress-bar { height: 14px; background: #e8ecf5; border-radius: 8px; overflow: hidden; }
+        .home-progress-fill { height: 100%; border-radius: 8px; transition: width .6s ease; }
+        .home-missing { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 24px; }
+        .home-missing-title { font-size: 13px; font-weight: 700; color: #1b3a5c; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .home-missing-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .home-missing-chip {
+            background: #fff3cd; border: 1px solid #ffc107; color: #7a5c00;
+            border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+        }
+        .home-missing-chip.past { background: #ffebee; border-color: #ef9a9a; color: #b71c1c; }
+        .home-recent { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .home-recent-title { font-size: 13px; font-weight: 700; color: #1b3a5c; margin-bottom: 12px; }
+        .home-recent-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .home-recent-row:last-child { border-bottom: none; }
+        .home-recent-date { color: #888; min-width: 72px; font-size: 12px; }
+        .home-recent-ore { font-weight: 700; color: #3B5BDB; min-width: 44px; text-align: right; }
+        .home-ok-msg { color: #2e7d32; font-size: 13px; font-weight: 600; padding: 8px 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>
+            <svg class="tymex-logo-svg" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="9" fill="#6272C8"/>
+                <rect x="8" y="20" width="7" height="14" rx="3.5" fill="white"/>
+                <rect x="17" y="12" width="7" height="22" rx="3.5" fill="white"/>
+                <rect x="26" y="16" width="7" height="18" rx="3.5" fill="white"/>
+            </svg>
+            <span class="tymex-title">TYMEX</span><span class="tymex-subtitle">Rilevazione ore</span>
+        </h1>
+        <div class="header-user">
+            <span id="headerUsername"></span>
+            <button class="btn-logout" onclick="doLogout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="buttons-section">
+            <div class="btn-grid">
+                <button id="btnHome" class="btn-table" data-home style="background:linear-gradient(135deg,#3B5BDB,#1b3a5c); padding:10px 24px; font-weight:600; display:none;" onclick="caricaHome()">HOME</button>
+                <button id="btnCruscotto" class="btn-table" style="background:linear-gradient(135deg,#3B5BDB,#1b3a5c); padding:10px 24px; font-weight:600;" onclick="caricaCruscotto()">CRUSCOTTO GENERALE</button>
+                <button class="btn-table" data-table="customers" onclick="loadTable('customers')">CLIENTI</button>
+                <button class="btn-table" data-table="documents" onclick="loadTable('documents')">RAPPORTINI</button>
+                <button class="btn-table" data-table="operators" onclick="loadTable('operators')">OPERATORI</button>
+                <button class="btn-table" data-table="projects"  onclick="loadTable('projects')">COMMESSE</button>
+                <button class="btn-table" data-table="services"  onclick="loadTable('services')">SERVIZI</button>
+                <button class="btn-table" style="background:linear-gradient(135deg,#6a3d99,#4a2070); padding:10px 24px; font-weight:600;" onclick="caricaCalendario()">CALENDARIO</button>
+                <button id="btnAdmin" class="btn-table" style="background:linear-gradient(135deg,#7b2d00,#b34700); padding:10px 24px; font-weight:600; display:none;" onclick="caricaAdmin()">ADMIN</button>
+            </div>
+        </div>
+
+        <div class="rapportini-section">
+            <h2>Esporta Rapportini</h2>
+            <div class="rapportini-row">
+                <label>MESE:</label>
+                <select id="rapportiniMese" onchange="onRapportiniMeseChange()" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:160px;">
+                    <option value="all">Tutti i mesi</option>
+                </select>
+                <label>DAL:</label>
+                <input type="date" id="dataDal">
+                <label>AL:</label>
+                <input type="date" id="dataAl">
+                <label>CLIENTE:</label>
+                <div id="rappClienteSlot"></div>
+                <label>COMMESSA:</label>
+                <div id="rappCommessaSlot"></div>
+                <button class="btn-rapportini" id="btnVisualizza" onclick="visualizzaRapportini()" style="background:linear-gradient(135deg,#1b3a5c,#122840);">VISUALIZZA</button>
+                <button class="btn-rapportini" id="btnRapportini" onclick="esportaRapportini()">ESPORTA RAPPORTINI SU EXCEL</button>
+                <span class="rapportini-status" id="rapportiniStatus"></span>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <h2 id="tableTitle">Caricamento...</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" class="search-box" id="searchBox" placeholder="Filtra risultati..." oninput="filterRows()" style="display:none;">
+                    <label id="lblSoloAttive" style="display:none;align-items:center;gap:5px;font-size:13px;color:#555;cursor:pointer;white-space:nowrap;">
+                        <input type="checkbox" id="chkSoloAttive" onchange="reloadCurrent()"> Visualizza solo commesse attive
+                    </label>
+                    <div class="toolbar" style="margin-bottom:0;">
+                        <label>Righe:</label>
+                        <input type="number" id="rowLimit" value="100" min="1" max="10000">
+                        <button class="btn-action" id="btnReload" onclick="reloadCurrent()" style="display:none;">Ricarica</button>
+                        <button class="btn-action export" id="btnExport" onclick="exportXLS()" style="display:none;">Esporta Excel</button>
+                    </div>
+                </div>
+            </div>
+            <div class="results-info" id="resultsInfo"></div>
+            <div id="resultsContainer">
+                <div class="loading"><div class="spinner"></div>Caricamento cruscotto...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip per servizi attivi (COMMESSE) -->
+    <div id="serviceTooltip"></div>
+
+<script>
+const API_BASE = window.location.origin;
+const DATASET = 'tymex_client';
+let currentTable = null;
+let currentData = null;
+let sortCol = null;
+let sortDir = 0; // 0=nessuno, 1=asc, -1=desc
+
+// ========================================================
+// COSTI MENSILI PER OPERATORE (da fogli Excel)
+// Chiave: 'YYYY-MM', valore: { cognome_minuscolo: costo_totale_mensile }
+// ========================================================
+// Popolato dai link Excel salvati su BigQuery (caricato all'apertura del cruscotto e della pagina Costi Orari)
+
+function getCognome(nomeCompleto) {
+    const parti = (nomeCompleto || '').trim().split(/\s+/);
+    return parti.length > 0 ? parti[parti.length - 1].toLowerCase() : '';
+}
+
+function parseOreDecimali(oreTxt) {
+    if (!oreTxt) return 0;
+    if (oreTxt.includes(':')) {
+        const [h, m] = oreTxt.split(':').map(Number);
+        return h + m / 60;
+    }
+    return parseFloat(String(oreTxt).replace(',', '.')) || 0;
+}
+
+// Calcola costo orario per mese per operatore
+// Ritorna { 'YYYY-MM': { cognome: costoPerOra } }
+
+// ========================================================
+// CONFIGURAZIONI TABELLE — SQL custom, colonne, trasformazioni
+// ========================================================
+const TABLE_CONFIGS = {
+    customers: {
+        title: 'CLIENTI',
+        load: async (limit) => {
+            const sql = `SELECT RagioneSociale, Cap, Localita, Provincia, CodStato, CodCliFor, PartitaIva FROM \`tymex-1a330.tymex_client.customers\` LIMIT ${limit}`;
+            const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sql })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+            const raw = await resp.json();
+            return {
+                schema: ['Ragione Sociale', 'CAP', 'Localita', 'Provincia', 'Cod Stato', 'CodCliFor', 'Partita IVA'],
+                totalRows: raw.totalRows,
+                rows: raw.rows.map(r => ({
+                    'Ragione Sociale': r.RagioneSociale || '',
+                    'CAP': r.Cap || '',
+                    'Localita': r.Localita || '',
+                    'Provincia': r.Provincia || '',
+                    'Cod Stato': r.CodStato || '',
+                    'CodCliFor': r.CodCliFor || '',
+                    'Partita IVA': r.PartitaIva || ''
+                }))
+            };
+        }
+    },
+    documents: {
+        title: 'RAPPORTINI',
+        load: async (limit) => {
+            const docOpFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+                ? ` WHERE LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+                : '';
+            const sql = `SELECT operatorDisplayName, customerFiscalName, projectDescription, projectName, serviceDescription, serviceName, workedTime, customFields, creation_date, date, notes FROM \`tymex-1a330.tymex_client.documents\`${docOpFilter} ORDER BY creation_date DESC`;
+            const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sql })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+            const raw = await resp.json();
+
+            const filtrato = clienteFiltri.rapp.scelto || clienteFiltri.comm.scelto;
+            const rawRows = filtrato
+                ? raw.rows.filter(r => rigaNeiFiltriRapportini(r.customerFiscalName, r.projectName, r.projectDescription))
+                : raw.rows;
+
+            // Trasforma le righe (mostra solo le prime N)
+            const transformed = rawRows.slice(0, limit).map(r => {
+                let costoOr = '';
+                let rate = 0;
+                if (currentUser.canSeeCosts || currentUser.isAdmin) {
+                    rate = getTariffaOperatore(r.operatorDisplayName);
+                    if (rate > 0) costoOr = rate.toFixed(2).replace('.', ',');
+                }
+                let dataReg = '';
+                if (r.creation_date) {
+                    const d = new Date(r.creation_date);
+                    dataReg = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                }
+                let oreD = '';
+                const wt = r.workedTime || '';
+                if (wt.includes(':')) {
+                    const [h, m] = wt.split(':').map(Number);
+                    oreD = (h + m / 60).toFixed(2).replace('.', ',');
+                } else { oreD = wt; }
+
+                return {
+                    'Operatore': r.operatorDisplayName || '',
+                    'Cliente': r.customerFiscalName || '',
+                    'COMMESSA': r.projectDescription || '',
+                    'Codice Commessa': r.projectName || '',
+                    'Servizio': r.serviceDescription || '',
+                    'Codice Servizio': r.serviceName || '',
+                    'Ore Lavorate': oreD,
+                    'Costo Orario': costoOr,
+                    'Data Registrazione': dataReg,
+                    'Note': r.notes || '',
+                    _ore: parseOreDecimali(wt),
+                    _importo: rate > 0 ? rate * parseOreDecimali(wt) : null
+                };
+            });
+
+            return {
+                schema: ['Operatore', 'Cliente', 'COMMESSA', 'Codice Commessa', 'Servizio', 'Codice Servizio', 'Ore Lavorate', 'Costo Orario', 'Data Registrazione', 'Note'],
+                totalRows: filtrato ? rawRows.length : raw.totalRows,
+                rows: transformed
+            };
+        }
+    },
+    operators: {
+        title: 'OPERATORI',
+        load: async (limit) => {
+            const adminCols = currentUser.isAdmin
+                ? ', CostoLavorazione, Ore_Lunedi, Ore_Martedi, Ore_Mercoledi, Ore_Giovedi, Ore_Venerdi, Ore_Sabato, Ore_Domenica_Festivi'
+                : '';
+            const sql = `SELECT Cognome, Nome, Descrizione, IndirEmail, CodRisorsaProd${adminCols} FROM \`tymex-1a330.tymex_client.operators\` ORDER BY Cognome LIMIT ${limit}`;
+            const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sql })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+            const raw = await resp.json();
+
+            const baseSchema = ['Cognome', 'Nome', 'Descrizione', 'Email', 'Profilo'];
+            const adminSchema = ['Costo €/h', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom/Fest'];
+            return {
+                schema: currentUser.isAdmin ? [...baseSchema, ...adminSchema] : baseSchema,
+                totalRows: raw.totalRows,
+                rows: raw.rows.map(r => {
+                    const row = {
+                        'Cognome': r.Cognome || '',
+                        'Nome': r.Nome || '',
+                        'Descrizione': r.Descrizione || '',
+                        'Email': r.IndirEmail || '',
+                        'Profilo': r.CodRisorsaProd || ''
+                    };
+                    if (currentUser.isAdmin) {
+                        const costo = r.CostoLavorazione != null ? Number(r.CostoLavorazione) : 0;
+                        row['Costo €/h']   = costo > 0 ? costo.toFixed(2) : '';
+                        row['Lun']         = r.Ore_Lunedi || '';
+                        row['Mar']         = r.Ore_Martedi || '';
+                        row['Mer']         = r.Ore_Mercoledi || '';
+                        row['Gio']         = r.Ore_Giovedi || '';
+                        row['Ven']         = r.Ore_Venerdi || '';
+                        row['Sab']         = r.Ore_Sabato || '';
+                        row['Dom/Fest']    = r.Ore_Domenica_Festivi || '';
+                    }
+                    return row;
+                })
+            };
+        }
+    },
+    projects: {
+        title: 'COMMESSE',
+        load: async (limit) => {
+            const soloAttive = document.getElementById('chkSoloAttive').checked;
+            const where = soloAttive ? "WHERE UPPER(TRIM(p.SituazioneCommessa)) = 'ATTIVA' " : '';
+            const sql = `SELECT p.CodCommessa, p.Descrizione, p.SituazioneCommessa, c.CodCliFor, c.RagioneSociale, p.ActiveServices FROM \`tymex-1a330.tymex_client.projects\` p LEFT JOIN \`tymex-1a330.tymex_client.customers\` c ON p.CodCliFor = c.documentId ${where}LIMIT ${limit}`;
+            const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sql })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+            const raw = await resp.json();
+            return {
+                schema: ['Codice Commessa', 'Descrizione', 'Situazione Commessa', 'Codice Cliente', 'Ragione Sociale Cliente'],
+                totalRows: raw.totalRows,
+                rows: raw.rows.map(r => ({
+                    'Codice Commessa': r.CodCommessa || '',
+                    'Descrizione': r.Descrizione || '',
+                    'Situazione Commessa': r.SituazioneCommessa || '',
+                    'Codice Cliente': r.CodCliFor || '',
+                    'Ragione Sociale Cliente': r.RagioneSociale || '',
+                    '_activeServices': r.ActiveServices || '[]'
+                }))
+            };
+        }
+    },
+    services: {
+        title: 'SERVIZI',
+        load: async (limit) => {
+            const sql = `SELECT CodArt, DesArt, IsActive, IsDefault FROM \`tymex-1a330.tymex_client.services\` ORDER BY CodArt LIMIT ${limit}`;
+            const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sql })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+            const raw = await resp.json();
+            return {
+                schema: ['Codice', 'Descrizione', 'Attivo', 'DEFAULT'],
+                totalRows: raw.totalRows,
+                rows: raw.rows.map(r => ({
+                    'Codice': r.CodArt || '',
+                    'Descrizione': r.DesArt || '',
+                    'Attivo': (r.IsActive === 'true' || r.IsActive === true) ? 'SI' : 'NO',
+                    'DEFAULT': (r.IsDefault === 'true' || r.IsDefault === true) ? 'SI' : 'NO'
+                }))
+            };
+        }
+    }
+};
+
+// ========================================================
+// CARICAMENTO TABELLE
+// ========================================================
+async function loadTable(tableName) {
+    currentTable = tableName;
+    sortCol = null; sortDir = 0;
+
+    // Ripristina sezioni nascoste dal cruscotto
+    document.querySelector('.rapportini-section').style.display = '';
+    document.querySelector('.results-header').style.display = '';
+    document.querySelector('.results-section').classList.remove('cruscotto-mode');
+
+    // Carica mesi disponibili per il selettore rapportini
+    if (tableName === 'documents') loadRapportiniMesi();
+    // La barra Esporta Rapportini è visibile su tutte le tabelle
+    loadRapportiniClienti();
+
+    // Evidenzia pulsante attivo
+    document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`[data-table="${tableName}"]`);
+    if (btn) btn.classList.add('active');
+
+    const config = TABLE_CONFIGS[tableName];
+    document.getElementById('tableTitle').textContent = config ? config.title : tableName;
+    document.getElementById('searchBox').style.display = 'inline-block';
+    document.getElementById('btnReload').style.display = 'inline-block';
+    document.getElementById('btnExport').style.display = 'inline-block';
+    document.getElementById('lblSoloAttive').style.display = tableName === 'projects' ? 'inline-flex' : 'none';
+    document.getElementById('searchBox').value = '';
+    document.getElementById('resultsInfo').textContent = '';
+
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div>Caricamento in corso...</div>';
+
+    const limit = parseInt(document.getElementById('rowLimit').value) || 100;
+
+    try {
+        let data;
+        if (config && config.load) {
+            data = await config.load(limit);
+        } else {
+            const resp = await fetch(`${API_BASE}/api/bigquery/datasets/${DATASET}/tables/${tableName}/rows?limit=${limit}`);
+            if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+            data = await resp.json();
+        }
+        currentData = data;
+        renderTable(data);
+    } catch (e) {
+        container.innerHTML = `<div class="error">Errore: ${e.message}</div>`;
+    }
+}
+
+function sortByColumn(col) {
+    if (!currentData) return;
+    if (sortCol === col) {
+        sortDir = sortDir === 1 ? -1 : sortDir === -1 ? 0 : 1;
+    } else {
+        sortCol = col;
+        sortDir = 1;
+    }
+    if (sortDir === 0) sortCol = null;
+    renderTable(currentData, document.getElementById('searchBox').value);
+}
+
+function renderTable(data, filterText) {
+    const container = document.getElementById('resultsContainer');
+
+    if (!data.rows || data.rows.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nessun dato trovato</div>';
+        document.getElementById('resultsInfo').textContent = '0 righe';
+        return;
+    }
+
+    const filter = (filterText || '').toLowerCase();
+    let rows = data.rows;
+    if (filter) {
+        rows = rows.filter(row =>
+            data.schema.some(col => {
+                const v = row[col];
+                return v !== null && v !== undefined && String(v).toLowerCase().includes(filter);
+            })
+        );
+    }
+
+    // Ordinamento
+    if (sortCol && sortDir !== 0) {
+        rows = [...rows].sort((a, b) => {
+            let va = a[sortCol], vb = b[sortCol];
+            if (va === null || va === undefined) va = '';
+            if (vb === null || vb === undefined) vb = '';
+            const na = parseFloat(String(va).replace(',', '.'));
+            const nb = parseFloat(String(vb).replace(',', '.'));
+            if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
+            return String(va).localeCompare(String(vb), 'it') * sortDir;
+        });
+    }
+
+    document.getElementById('resultsInfo').textContent =
+        filter ? `${rows.length} di ${data.totalRows} righe (filtrate)` : `${data.totalRows} righe`;
+
+    if (rows.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nessun risultato per il filtro applicato</div>';
+        return;
+    }
+
+    const isProjects = currentTable === 'projects';
+
+    let html = '<div class="table-wrapper"><table><thead><tr>';
+    html += '<th>#</th>';
+    for (const col of data.schema) {
+        const cls = sortCol === col ? (sortDir === 1 ? 'sort-asc' : 'sort-desc') : '';
+        const arrow = sortCol === col ? (sortDir === 1 ? '&#9650;' : '&#9660;') : '&#9650;&#9660;';
+        html += `<th class="${cls}" onclick="sortByColumn('${jsArg(col)}')">${escapeHtml(col)}<span class="sort-arrow">${arrow}</span></th>`;
+    }
+    html += '</tr></thead><tbody>';
+
+    rows.forEach((row, idx) => {
+        let trAttr = '';
+        if (isProjects && row._activeServices) {
+            trAttr = ` data-services="${escapeAttr(row._activeServices)}" onmouseenter="showServiceTooltip(event, this)" onmouseleave="hideServiceTooltip()" style="cursor:help"`;
+        }
+        html += `<tr${trAttr}>`;
+        html += `<td style="color:#aaa">${idx + 1}</td>`;
+        for (const col of data.schema) {
+            const val = row[col];
+            const display = val === null || val === undefined || val === '' ? '<span style="color:#ccc">-</span>' : escapeHtml(String(val));
+            html += `<td title="${escapeAttr(String(val ?? ''))}">${display}</td>`;
+        }
+        html += '</tr>';
+    });
+
+    const totali = rows[0]._ore !== undefined ? renderTotaliRapportini(rows, data) : { piede: '', note: '' };
+    html += `</tbody>${totali.piede}</table></div>${totali.note}`;
+    container.innerHTML = html;
+}
+
+// Totali delle righe visualizzate: seguono il filtro testo e il limite Righe
+function renderTotaliRapportini(rows, data) {
+    const fmt = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let totOre = 0, totImporto = 0, senzaCosto = 0;
+    for (const r of rows) {
+        totOre += r._ore;
+        if (r._importo !== null) totImporto += r._importo;
+        else if (r._ore > 0) senzaCosto++;
+    }
+    const conCosti = currentUser.canSeeCosts || currentUser.isAdmin;
+
+    // Ogni totale sta sotto la sua colonna; i nomi cambiano tra griglia RAPPORTINI e anteprima VISUALIZZA
+    let piede = '<tfoot class="rapportini-totali"><tr><td></td>';
+    data.schema.forEach((col, i) => {
+        let cella = i === 0 ? 'TOTALE' : '';
+        if (col === 'Ore Lavorate' || col === 'Ore_Lavorate') cella = fmt(totOre);
+        else if (conCosti && (col === 'Costo Orario' || col === 'Costo_Operatore')) cella = `€ ${fmt(totImporto)}`;
+        piede += `<td>${cella}</td>`;
+    });
+    piede += '</tr></tfoot>';
+
+    let note = '';
+    if (conCosti && senzaCosto > 0) {
+        note += `<div class="rapportini-note">${senzaCosto === 1 ? '1 riga senza costo orario non è inclusa' : `${senzaCosto} righe senza costo orario non sono incluse`} nell'importo</div>`;
+    }
+    if (data.rows.length < data.totalRows) {
+        note += `<div class="rapportini-note">Totali calcolati sulle prime ${data.rows.length} di ${data.totalRows} righe: aumenta "Righe" e clicca Ricarica per includerle tutte</div>`;
+    }
+    return { piede, note };
+}
+
+function filterRows() {
+    if (!currentData) return;
+    renderTable(currentData, document.getElementById('searchBox').value);
+}
+
+function reloadCurrent() {
+    if (currentTable) loadTable(currentTable);
+}
+
+function downloadXLS(schema, rows, filename) {
+    const esc = v => String(v === null || v === undefined ? '' : v)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" '
+             + 'xmlns:x="urn:schemas-microsoft-com:office:excel" '
+             + 'xmlns="http://www.w3.org/TR/REC-html40">'
+             + '<head><meta charset="UTF-8">'
+             + '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>'
+             + '<x:ExcelWorksheet><x:Name>Foglio1</x:Name>'
+             + '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>'
+             + '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
+             + '</head><body><table border="1">';
+    html += '<thead><tr>' + schema.map(h => `<th style="background:#1b3a5c;color:white;font-weight:bold;">${esc(h)}</th>`).join('') + '</tr></thead>';
+    html += '<tbody>';
+    for (const row of rows) {
+        html += '<tr>' + schema.map(col => `<td>${esc(row[col])}</td>`).join('') + '</tr>';
+    }
+    html += '</tbody></table></body></html>';
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}_${new Date().toISOString().slice(0,10)}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportXLS() {
+    if (!currentData || !currentData.rows.length) return;
+    const showCosts = currentUser.canSeeCosts || currentUser.isAdmin;
+    const schema = showCosts ? currentData.schema : currentData.schema.filter(c => c !== 'Costo Orario');
+    const config = TABLE_CONFIGS[currentTable];
+    const fname = config ? config.title : (currentTable || 'export');
+    downloadXLS(schema, currentData.rows, fname);
+}
+
+// ========================================================
+// TOOLTIP SERVIZI ATTIVI (COMMESSE)
+// ========================================================
+function showServiceTooltip(event, tr) {
+    const servicesJson = tr.dataset.services;
+    if (!servicesJson) return;
+    let services;
+    try { services = JSON.parse(servicesJson); } catch(e) { return; }
+    if (!services || services.length === 0) {
+        const tooltip = document.getElementById('serviceTooltip');
+        tooltip.innerHTML = '<h4>Servizi attivi</h4><p style="color:#aaa;font-size:12px">Nessun servizio attivo</p>';
+        tooltip.style.display = 'block';
+        tooltip.style.top = (event.clientY + window.scrollY + 10) + 'px';
+        tooltip.style.left = (event.clientX + 10) + 'px';
+        return;
+    }
+
+    let html = '<h4>Servizi attivi</h4><table><thead><tr><th>Codice</th><th>Descrizione</th></tr></thead><tbody>';
+    for (const s of services) {
+        html += `<tr><td>${escapeHtml(s.CodArt || '')}</td><td>${escapeHtml(s.DesArt || '')}</td></tr>`;
+    }
+    html += '</tbody></table>';
+
+    const tooltip = document.getElementById('serviceTooltip');
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    tooltip.style.top = (event.clientY + window.scrollY + 10) + 'px';
+    tooltip.style.left = Math.min(event.clientX + 10, window.innerWidth - 440) + 'px';
+}
+
+// Popup dettaglio del blocco "Altro" nel treemap servizi
+function showAltroTooltip(event, el) {
+    let items;
+    try { items = JSON.parse(el.dataset.altro); } catch (e) { return; }
+    const tot = items.reduce((s, [, v]) => s + v, 0);
+    let html = `<h4>Altro — ${items.length} servizi (${tot.toFixed(2).replace('.', ',')} h)</h4>`
+             + '<table><thead><tr><th>Servizio</th><th style="text-align:right">Ore</th><th style="text-align:right">%</th></tr></thead><tbody>';
+    for (const [nome, ore] of items) {
+        const pct = tot > 0 ? ore / tot * 100 : 0;
+        html += `<tr><td>${escapeHtml(nome)}</td><td style="text-align:right;white-space:nowrap">${ore.toFixed(2).replace('.', ',')}</td><td style="text-align:right;white-space:nowrap">${pct.toFixed(1).replace('.', ',')}%</td></tr>`;
+    }
+    html += '</tbody></table>';
+    const tooltip = document.getElementById('serviceTooltip');
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    tooltip.style.maxHeight = '360px';
+    tooltip.style.overflowY = 'auto';
+    moveAltroTooltip(event);
+}
+
+function moveAltroTooltip(event) {
+    const tooltip = document.getElementById('serviceTooltip');
+    if (!tooltip || tooltip.style.display !== 'block') return;
+    const w = tooltip.offsetWidth, h = tooltip.offsetHeight;
+    let left = event.clientX + 12, top = event.clientY + 12;
+    if (left + w > window.innerWidth - 8) left = Math.max(8, event.clientX - w - 12);
+    if (top + h > window.innerHeight - 8) top = Math.max(8, event.clientY - h - 12);
+    tooltip.style.left = (left + window.scrollX) + 'px';
+    tooltip.style.top = (top + window.scrollY) + 'px';
+}
+
+function hideServiceTooltip() {
+    const tooltip = document.getElementById('serviceTooltip');
+    if (tooltip) tooltip.style.display = 'none';
+}
+
+// ========================================================
+// FILTRI CLIENTE E COMMESSA — tendina con ricerca (cruscotto e rapportini)
+// ========================================================
+const clienteFiltri = {
+    dash: { id: 'dashCliente', tutti: 'Tutti i clienti', elenco: [], scelto: '', visibili: [], onChange: () => aggiornaCruscotto() },
+    rapp: { id: 'rappCliente', tutti: 'Tutti i clienti', elenco: [], scelto: '', visibili: [], onChange: () => { aggiornaCommesseRapportini(); aggiornaVistaRapportini(); } },
+    comm: { id: 'rappCommessa', tutti: 'Tutte le commesse', elenco: [], scelto: '', visibili: [], onChange: () => aggiornaVistaRapportini() }
+};
+
+function nomeCliente(v) {
+    return (v || '').trim().replace(/\s+/g, ' ');
+}
+
+// Etichetta del riquadro clienti: i rapportini senza cliente restano visibili e selezionabili
+function clienteRiga(r) {
+    return r.customerFiscalName || '(Senza cliente)';
+}
+
+function elencoClienti(rows) {
+    const nomi = new Set(rows.map(r => nomeCliente(r.customerFiscalName)).filter(Boolean));
+    return [...nomi].sort((a, b) => a.localeCompare(b, 'it'));
+}
+
+function etichettaCommessa(codice, descrizione) {
+    return [nomeCliente(codice), nomeCliente(descrizione)].filter(Boolean).join(' — ');
+}
+
+function rigaNeiFiltriRapportini(cliente, codice, descrizione) {
+    const { rapp, comm } = clienteFiltri;
+    return (!rapp.scelto || nomeCliente(cliente) === rapp.scelto)
+        && (!comm.scelto || etichettaCommessa(codice, descrizione) === comm.scelto);
+}
+
+function clienteComboHtml(scope) {
+    const { id, tutti } = clienteFiltri[scope];
+    return `<div class="cliente-combo">
+        <input type="text" id="${id}Input" placeholder="${tutti}" autocomplete="off"
+               oninput="onClienteInput('${scope}', this.value)"
+               onfocus="this.select(); showClienteDropdown('${scope}', '')"
+               onblur="hideClienteDropdown('${scope}')"
+               onkeydown="onClienteKeydown('${scope}', event)">
+        <span class="cliente-caret">&#9660;</span>
+        <div id="${id}Dropdown" class="cliente-dropdown" onmousedown="event.preventDefault()"></div>
+    </div>`;
+}
+
+function onClienteInput(scope, q) {
+    if (!q.trim() && clienteFiltri[scope].scelto) selezionaCliente(scope, '', true);
+    showClienteDropdown(scope, q);
+}
+
+function onClienteKeydown(scope, event) {
+    if (event.key === 'Escape') {
+        event.target.blur();
+    } else if (event.key === 'Enter') {
+        event.preventDefault();
+        const f = clienteFiltri[scope];
+        if (event.target.value.trim() && f.visibili.length) selezionaCliente(scope, f.visibili[0]);
+    }
+}
+
+function showClienteDropdown(scope, q) {
+    const f = clienteFiltri[scope];
+    const dropdown = document.getElementById(`${f.id}Dropdown`);
+    const ql = q.trim().toLowerCase();
+    // Prima i clienti che iniziano con il testo digitato, poi quelli che lo contengono
+    f.visibili = [
+        ...f.elenco.filter(n => n.toLowerCase().startsWith(ql)),
+        ...f.elenco.filter(n => !n.toLowerCase().startsWith(ql) && n.toLowerCase().includes(ql))
+    ];
+    let html = `<div class="cliente-opt all" onclick="selezionaClienteIdx('${scope}', -1)">— ${f.tutti} —</div>`;
+    f.visibili.forEach((nome, i) => {
+        const cls = nome === f.scelto ? ' selected' : '';
+        html += `<div class="cliente-opt${cls}" title="${escapeAttr(nome)}" onclick="selezionaClienteIdx('${scope}', ${i})">${escapeHtml(nome)}</div>`;
+    });
+    if (!f.visibili.length) html += '<div class="cliente-empty">Nessun risultato</div>';
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+}
+
+// All'uscita dal campo un testo non confermato torna alla voce selezionata
+function hideClienteDropdown(scope) {
+    const f = clienteFiltri[scope];
+    const dropdown = document.getElementById(`${f.id}Dropdown`);
+    const input = document.getElementById(`${f.id}Input`);
+    if (dropdown) dropdown.style.display = 'none';
+    if (input) input.value = f.scelto;
+}
+
+function selezionaClienteIdx(scope, idx) {
+    selezionaCliente(scope, idx < 0 ? '' : clienteFiltri[scope].visibili[idx]);
+}
+
+function selezionaCliente(scope, nome, restaNelCampo) {
+    const f = clienteFiltri[scope];
+    const cambiato = f.scelto !== nome;
+    f.scelto = nome;
+    if (!restaNelCampo) document.getElementById(`${f.id}Input`).blur();
+    if (cambiato) f.onChange();
+}
+
+// La tendina commesse mostra solo quelle del cliente scelto; una commessa di un altro cliente viene deselezionata
+function aggiornaCommesseRapportini() {
+    const f = clienteFiltri.comm;
+    const cliente = clienteFiltri.rapp.scelto;
+    const righe = rapportiniCommesse.filter(r => !cliente || nomeCliente(r.customerFiscalName) === cliente);
+    f.elenco = [...new Set(righe.map(r => etichettaCommessa(r.projectName, r.projectDescription)).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'it'));
+    if (f.scelto && !f.elenco.includes(f.scelto)) {
+        f.scelto = '';
+        document.getElementById(`${f.id}Input`).value = '';
+    }
+}
+
+// Riapplica i filtri alla vista aperta: griglia RAPPORTINI o anteprima VISUALIZZA
+function aggiornaVistaRapportini() {
+    if (currentTable === 'documents') loadTable('documents');
+    else if (currentTable === null && document.getElementById('dataDal').value && document.getElementById('dataAl').value) visualizzaRapportini();
+}
+
+document.getElementById('rappClienteSlot').innerHTML = clienteComboHtml('rapp');
+document.getElementById('rappCommessaSlot').innerHTML = clienteComboHtml('comm');
+
+let rapportiniCommesse = []; // coppie cliente/commessa per le tendine dei rapportini
+let rapportiniClientiLoaded = false;
+async function loadRapportiniClienti() {
+    if (rapportiniClientiLoaded) return;
+    try {
+        const opFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+            ? ` WHERE LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+            : '';
+        const sql = `SELECT DISTINCT customerFiscalName, projectName, projectDescription FROM \`tymex-1a330.tymex_client.documents\`${opFilter}`;
+        const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql })
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        clienteFiltri.rapp.elenco = elencoClienti(data.rows);
+        rapportiniCommesse = data.rows;
+        aggiornaCommesseRapportini();
+        rapportiniClientiLoaded = true;
+    } catch(e) {}
+}
+
+// ========================================================
+// RAPPORTINI EXPORT (con filtro date)
+// ========================================================
+const RAPPORTINI_COLUMNS = ['documentId','Data','ID_Commessa','Descrizione_Commessa','Ragione_Sociale_Cliente','ID_Cliente','ID_Servizio','Descrizione_Servizio','Operatore','Costo_Operatore','Ore_Lavorate','Note'];
+
+let rapportiniMesiLoaded = false;
+async function loadRapportiniMesi() {
+    if (rapportiniMesiLoaded) return;
+    try {
+        // Riusa dashData se disponibile, altrimenti query leggera
+        let rows;
+        if (dashData && dashData.rows) {
+            rows = dashData.rows;
+        } else {
+            const sql = `SELECT DISTINCT FORMAT_DATE('%Y-%m', date) AS mese FROM \`tymex-1a330.tymex_client.documents\` ORDER BY mese`;
+            const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sql })
+            });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            // Converti formato query a formato compatibile con getAvailableMesi
+            rows = data.rows.map(r => ({ date: r.mese + '-01' }));
+        }
+        const mesi = getAvailableMesi(rows);
+        const sel = document.getElementById('rapportiniMese');
+        if (!sel) return;
+        sel.innerHTML = '<option value="all">Tutti i mesi</option>' +
+            mesi.map(m => `<option value="${m.key}">${m.label}</option>`).join('');
+        rapportiniMesiLoaded = true;
+    } catch(e) {}
+}
+
+function onRapportiniMeseChange() {
+    const val = document.getElementById('rapportiniMese').value;
+    if (val === 'all') {
+        document.getElementById('dataDal').value = '';
+        document.getElementById('dataAl').value = '';
+        return;
+    }
+    const range = meseKeyToRange(val);
+    document.getElementById('dataDal').value = range.dal;
+    document.getElementById('dataAl').value = range.al;
+    visualizzaRapportini();
+}
+
+function validaDateRapportini() {
+    const dal = document.getElementById('dataDal').value;
+    const al = document.getElementById('dataAl').value;
+    const status = document.getElementById('rapportiniStatus');
+    if (!dal || !al) {
+        status.textContent = 'Seleziona entrambe le date (DAL e AL)';
+        status.style.color = '#e53935';
+        return null;
+    }
+    if (dal > al) {
+        status.textContent = 'La data DAL deve essere precedente alla data AL';
+        status.style.color = '#e53935';
+        return null;
+    }
+    return { dal, al };
+}
+
+async function caricaRapportini(dal, al) {
+    const rappOpFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+        ? ` AND LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+        : '';
+    const sql = `SELECT documentId, date AS Data, projectName AS ID_Commessa, projectDescription AS Descrizione_Commessa, customerFiscalName AS Ragione_Sociale_Cliente, customerName AS ID_Cliente, serviceName AS ID_Servizio, serviceDescription AS Descrizione_Servizio, operatorDisplayName AS Operatore, operatorCost AS Costo_Operatore, workedTime AS Ore_Lavorate, customFields, notes AS Note FROM \`tymex-1a330.tymex_client.documents\` WHERE date BETWEEN '${dal}' AND '${al}'${rappOpFilter} ORDER BY date`;
+
+    const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql })
+    });
+    if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || resp.statusText);
+    }
+    const data = await resp.json();
+    if (data.rows) {
+        data.rows = data.rows.filter(r => rigaNeiFiltriRapportini(r['Ragione_Sociale_Cliente'], r['ID_Commessa'], r['Descrizione_Commessa']));
+    }
+    return data;
+}
+
+function trasformaRiga(row) {
+    let dataVal = '';
+    if (row['Data']) {
+        const d = new Date(row['Data']);
+        dataVal = d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+    }
+    let oreDecimale = '';
+    const oreTxt = row['Ore_Lavorate'] || '';
+    if (oreTxt && oreTxt.includes(':')) {
+        const [h, m] = oreTxt.split(':').map(Number);
+        const dec = h + m / 60;
+        oreDecimale = dec.toFixed(2).replace('.', ',').replace(/0+$/, '').replace(/,$/, '');
+    } else if (oreTxt) {
+        oreDecimale = oreTxt;
+    }
+    const operatore = row['Operatore'] || '';
+    let costoOp = '';
+    let rate = 0;
+    if (currentUser.canSeeCosts || currentUser.isAdmin) {
+        rate = getTariffaOperatore(operatore);
+        if (rate > 0) costoOp = rate.toFixed(2).replace('.', ',');
+    }
+
+    return {
+        documentId: row['documentId'] || '',
+        Data: dataVal,
+        ID_Commessa: row['ID_Commessa'] || '',
+        Descrizione_Commessa: row['Descrizione_Commessa'] || '',
+        Ragione_Sociale_Cliente: row['Ragione_Sociale_Cliente'] || '',
+        ID_Cliente: row['ID_Cliente'] || '',
+        ID_Servizio: row['ID_Servizio'] || '',
+        Descrizione_Servizio: row['Descrizione_Servizio'] || '',
+        Operatore: operatore,
+        Costo_Operatore: costoOp,
+        Ore_Lavorate: oreDecimale,
+        Note: row['Note'] || '',
+        _ore: parseOreDecimali(oreTxt),
+        _importo: rate > 0 ? rate * parseOreDecimali(oreTxt) : null
+    };
+}
+
+async function visualizzaRapportini() {
+    const date = validaDateRapportini();
+    if (!date) return;
+
+    const status = document.getElementById('rapportiniStatus');
+    const btn = document.getElementById('btnVisualizza');
+    btn.disabled = true;
+    status.textContent = 'Caricamento in corso...';
+    status.style.color = '#888';
+
+    // Ripristina sezioni e deseleziona tabelle
+    document.querySelector('.rapportini-section').style.display = '';
+    document.querySelector('.results-header').style.display = '';
+    document.querySelector('.results-section').classList.remove('cruscotto-mode');
+    document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+    currentTable = null;
+    sortCol = null; sortDir = 0;
+
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div>Caricamento rapportini...</div>';
+    document.getElementById('tableTitle').textContent = `Rapportini dal ${date.dal} al ${date.al}`;
+    document.getElementById('searchBox').style.display = 'inline-block';
+    document.getElementById('searchBox').value = '';
+    document.getElementById('btnReload').style.display = 'none';
+    document.getElementById('btnExport').style.display = 'none';
+    document.getElementById('lblSoloAttive').style.display = 'none';
+
+    try {
+        const data = await caricaRapportini(date.dal, date.al);
+
+        if (!data.rows || data.rows.length === 0) {
+            status.textContent = 'Nessun rapportino trovato nel periodo selezionato';
+            status.style.color = '#e8710a';
+            container.innerHTML = '<div class="empty-state">Nessun rapportino trovato nel periodo selezionato</div>';
+            btn.disabled = false;
+            return;
+        }
+
+        const righe = data.rows.map(r => trasformaRiga(r));
+        currentData = { schema: RAPPORTINI_COLUMNS, totalRows: righe.length, rows: righe };
+        renderTable(currentData);
+
+        status.textContent = `${righe.length} rapportini trovati`;
+        status.style.color = '#0d904f';
+    } catch (e) {
+        status.textContent = 'Errore: ' + e.message;
+        status.style.color = '#e53935';
+        container.innerHTML = `<div class="error">Errore: ${escapeHtml(e.message)}</div>`;
+    }
+    btn.disabled = false;
+}
+
+async function esportaRapportini() {
+    const date = validaDateRapportini();
+    if (!date) return;
+
+    const status = document.getElementById('rapportiniStatus');
+    const btn = document.getElementById('btnRapportini');
+    btn.disabled = true;
+    status.textContent = 'Caricamento in corso...';
+    status.style.color = '#888';
+
+    try {
+        const data = await caricaRapportini(date.dal, date.al);
+
+        if (!data.rows || data.rows.length === 0) {
+            status.textContent = 'Nessun rapportino trovato nel periodo selezionato';
+            status.style.color = '#e8710a';
+            btn.disabled = false;
+            return;
+        }
+
+        const showCosts = currentUser.canSeeCosts || currentUser.isAdmin;
+        const cols = showCosts ? RAPPORTINI_COLUMNS : RAPPORTINI_COLUMNS.filter(c => c !== 'Costo_Operatore');
+        const righe = data.rows.map(r => trasformaRiga(r));
+        downloadXLS(cols, righe, `rapportini_${date.dal}_${date.al}`);
+
+        status.textContent = `Esportati ${data.rows.length} rapportini`;
+        status.style.color = '#0d904f';
+    } catch (e) {
+        status.textContent = 'Errore: ' + e.message;
+        status.style.color = '#e53935';
+    }
+    btn.disabled = false;
+}
+
+// ========================================================
+// CRUSCOTTO GENERALE — Cross-filter stile Power BI
+// ========================================================
+let dashData = null;
+let dashCharts = {};
+let dashFilters = { commessa: 'all', dataDal: '', dataAl: '' };
+let commesseAll = []; // [{desc, code}] per autocomplete filtro commessa
+
+function onDashCommessaInput(q) {
+    document.getElementById('dashCommessa').value = 'all';
+    showDashCommesseDropdown(q);
+}
+function showDashCommesseDropdown(q) {
+    const dropdown = document.getElementById('dashCommessaDropdown');
+    if (!dropdown) return;
+    const ql = (q !== undefined ? q : (document.getElementById('dashCommessaInput')?.value || '')).toLowerCase();
+    const matches = ql
+        ? commesseAll.filter(c => c.desc.toLowerCase().includes(ql) || c.code.toLowerCase().includes(ql))
+        : commesseAll;
+    const rowStyle = 'padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    let html = `<div style="${rowStyle}color:#666;border-bottom:1px solid #f0f0f0;" onmousedown="selectDashCommessa('all','')">— Tutte le commesse —</div>`;
+    for (const c of matches.slice(0, 60)) {
+        const disp = c.code ? `<b>${escapeHtml(c.code)}</b> &mdash; ${escapeHtml(c.desc)}` : escapeHtml(c.desc);
+        html += `<div style="${rowStyle}" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''" onmousedown="selectDashCommessa('${jsArg(c.desc)}','${jsArg(c.code)}')">${disp}</div>`;
+    }
+    if (!matches.length) html += '<div style="padding:8px;color:#aaa;font-size:12px;">Nessun risultato</div>';
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+}
+function hideDashCommesseDropdown() {
+    const d = document.getElementById('dashCommessaDropdown');
+    if (d) d.style.display = 'none';
+}
+function selectDashCommessa(value, code) {
+    const hidden = document.getElementById('dashCommessa');
+    const input = document.getElementById('dashCommessaInput');
+    if (hidden) hidden.value = value;
+    if (input) input.value = value === 'all' ? '' : (code ? `${code} — ${value}` : value);
+    hideDashCommesseDropdown();
+    onDashFilterChange();
+}
+let dashSelection = { commessa: null, operatore: null, servizio: null, fatturare: null, cliente: null };
+let opExpandedSet  = new Set();
+let commExpandedMap = new Set();
+let _drillOpKeys   = [];   // registry nomi operatori per onclick sicuro
+let _drillCommKeys = [];   // registry {op,comm} per onclick sicuro
+let operatorCostRates = {}; // { 'Nome Cognome': 25.5, ... } — da BigQuery operators.costoOrario
+let operatorSchedule  = {}; // { 'Nome Cognome': { mon:8, tue:8, ... } } — ore previste per giorno
+let dashMinDate = '', dashMaxDate = '';
+
+const TREEMAP_COLORS = ['#3B5BDB','#1b3a5c','#3d6b99','#0d7c8c','#557a95','#2e7d6a','#4a90a4','#1a5276'];
+const BAR_COLOR = '#3B5BDB';
+const BAR_COLOR_DIM = 'rgba(59,91,219,0.15)';
+
+function hasActiveSelection() {
+    return dashSelection.commessa || dashSelection.operatore || dashSelection.servizio || dashSelection.fatturare || dashSelection.cliente;
+}
+
+function toggleSelection(dim, value) {
+    dashSelection[dim] = dashSelection[dim] === value ? null : value;
+    aggiornaCruscotto();
+}
+
+function resetSelection() {
+    dashSelection = { commessa: null, operatore: null, servizio: null, fatturare: null, cliente: null };
+    aggiornaCruscotto();
+}
+
+// Filtra righe applicando filtri dropdown + selezioni cross-filter,
+// ma esclude la dimensione `excludeDim` dalla selezione (per non auto-filtrarsi)
+function getDashRowsFor(excludeDim) {
+    if (!dashData) return [];
+    return dashData.rows.filter(r => {
+        const d = (r.date || '').slice(0, 10);
+        if (dashFilters.dataDal && d < dashFilters.dataDal) return false;
+        if (dashFilters.dataAl && d > dashFilters.dataAl) return false;
+        if (dashFilters.commessa !== 'all' && r.projectDescription !== dashFilters.commessa) return false;
+        if (clienteFiltri.dash.scelto && r.customerFiscalName !== clienteFiltri.dash.scelto) return false;
+        // Cross-filter: applica tutte le selezioni tranne la propria dimensione
+        if (excludeDim !== 'commessa' && dashSelection.commessa && r.projectDescription !== dashSelection.commessa) return false;
+        if (excludeDim !== 'operatore' && dashSelection.operatore && r.operatorDisplayName !== dashSelection.operatore) return false;
+        if (excludeDim !== 'servizio' && dashSelection.servizio && r.serviceDescription !== dashSelection.servizio) return false;
+        if (excludeDim !== 'cliente' && dashSelection.cliente && clienteRiga(r) !== dashSelection.cliente) return false;
+        if (excludeDim !== 'fatturare' && dashSelection.fatturare) {
+            let fat = 'No';
+            try { fat = JSON.parse(r.customFields || '{}').daFatturare || 'No'; } catch(e) {}
+            if (fat !== dashSelection.fatturare) return false;
+        }
+        return true;
+    });
+}
+
+// Righe con TUTTI i filtri applicati (per stats)
+function getFullyFilteredRows() {
+    return getDashRowsFor(null);
+}
+
+// Ritorna il costo orario per un operatore da BigQuery operators.costoOrario
+function getCostoOrario(opName) {
+    return operatorCostRates[opName] || 0;
+}
+
+// Come getCostoOrario, per i nomi non normalizzati letti direttamente dai rapportini
+function getTariffaOperatore(opName) {
+    return getCostoOrario(opName) || getCostoOrario((opName || '').trim().replace(/\s+/g, ' '));
+}
+
+async function caricaCruscotto() {
+    document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+    currentTable = null; sortCol = null; sortDir = 0;
+    document.querySelector('.rapportini-section').style.display = 'none';
+    document.querySelector('.results-header').style.display = 'none';
+    document.querySelector('.results-section').classList.add('cruscotto-mode');
+    document.getElementById('resultsInfo').textContent = '';
+
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div>Caricamento cruscotto...</div>';
+
+    try {
+        const opFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+            ? ` WHERE LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+            : '';
+        const sql = `SELECT documentId, date, projectName, projectDescription, customerFiscalName, customerName, serviceName, serviceDescription, operatorDisplayName, workedTime, customFields, creation_date FROM \`tymex-1a330.tymex_client.documents\`${opFilter} ORDER BY date`;
+        const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql })
+        });
+        if (!resp.ok) { const err = await resp.json(); throw new Error(err.detail || resp.statusText); }
+        dashData = await resp.json();
+
+        dashMinDate = '9999-12-31'; dashMaxDate = '0000-01-01';
+        for (const r of dashData.rows) {
+            const d = (r.date || '').slice(0, 10);
+            if (d < dashMinDate) dashMinDate = d;
+            if (d > dashMaxDate) dashMaxDate = d;
+            // Normalizza spazi nel nome operatore (evita duplicati da spazi extra in BigQuery)
+            if (r.operatorDisplayName) r.operatorDisplayName = r.operatorDisplayName.trim().replace(/\s+/g, ' ');
+            r.customerFiscalName = nomeCliente(r.customerFiscalName);
+        }
+        clienteFiltri.dash.elenco = elencoClienti(dashData.rows);
+        clienteFiltri.dash.scelto = '';
+        dashFilters = { commessa: 'all', dataDal: dashMinDate, dataAl: dashMaxDate };
+        dashSelection = { commessa: null, operatore: null, servizio: null, fatturare: null, cliente: null };
+
+        renderCruscotto(container);
+    } catch (e) {
+        container.innerHTML = `<div class="error">Errore: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function renderCruscotto(container) {
+    // Popola commesseAll con codice + descrizione per autocomplete
+    const commesseMap = {};
+    dashData.rows.forEach(r => { const d = r.projectDescription||''; if(d && !commesseMap[d]) commesseMap[d] = r.projectName||''; });
+    commesseAll = Object.entries(commesseMap).map(([desc,code]) => ({desc,code})).sort((a,b) => a.desc.localeCompare(b.desc));
+    const commesse = commesseAll; // mantenuto per compatibilità
+    const mesiDisponibili = getAvailableMesi(dashData.rows);
+    const showCosts = currentUser.isAdmin || currentUser.canSeeCosts;
+
+    container.innerHTML = `
+    <div class="cruscotto">
+        <div class="card card-full">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label>Mese</label>
+                    <select id="dashMese" onchange="onDashMeseChange()">
+                        <option value="all">Tutti</option>
+                        ${mesiDisponibili.map(m => `<option value="${m.key}">${m.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Cliente</label>
+                    ${clienteComboHtml('dash')}
+                </div>
+                <div class="filter-group" style="position:relative;">
+                    <label>Commessa</label>
+                    <input type="text" id="dashCommessaInput"
+                           value="${dashFilters.commessa !== 'all' ? escapeAttr(dashFilters.commessa) : ''}"
+                           placeholder="Cerca codice o descrizione…"
+                           oninput="onDashCommessaInput(this.value)"
+                           onfocus="showDashCommesseDropdown()"
+                           onblur="setTimeout(hideDashCommesseDropdown, 200)"
+                           autocomplete="off"
+                           style="width:100%;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                    <div id="dashCommessaDropdown"
+                         style="display:none;position:absolute;top:calc(100% + 2px);left:0;min-width:100%;max-width:420px;max-height:220px;overflow-y:auto;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,0.13);z-index:9999;"></div>
+                    <input type="hidden" id="dashCommessa" value="${dashFilters.commessa}">
+                </div>
+                <div class="filter-group">
+                    <label>Dal</label>
+                    <input type="date" id="dashDal" value="${dashFilters.dataDal}" onchange="onDashFilterChange()">
+                </div>
+                <div class="filter-group">
+                    <label>Al</label>
+                    <input type="date" id="dashAl" value="${dashFilters.dataAl}" onchange="onDashFilterChange()">
+                </div>
+                <div style="flex:0;display:flex;gap:4px;align-items:flex-end;padding-bottom:1px;">
+                    <div class="dash-stat"><div class="val" id="dashTotOre">0</div><div class="lbl">Ore</div></div>
+                    <div class="dash-stat"><div class="val" id="dashTotRapp">0</div><div class="lbl">Rapp.</div></div>
+                    ${showCosts ? '<div class="dash-stat"><div class="val" id="dashTotValore" style="color:#2e7d6a">€0</div><div class="lbl">Valore</div></div>' : ''}
+                </div>
+            </div>
+            <div class="sel-tags" id="dashSelTags"></div>
+        </div>
+        <div class="card card-chart">
+            <h3>Ore lavorate per Commessa</h3>
+            <div class="chart-scroll-wrap">
+                <div id="chartCommesseWrap" style="position:relative;width:100%;">
+                    <canvas id="chartCommesse"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="card card-op">
+            <h3>Operatore</h3>
+            <div id="dashOpTable"></div>
+            <div id="dashOpDrill"></div>
+        </div>
+        <div class="card">
+            <h3>Top Servizi per ore</h3>
+            <div id="dashTreemap"></div>
+        </div>
+        <div class="card card-chart">
+            <h3>Ore lavorate per Cliente</h3>
+            <div class="chart-scroll-wrap">
+                <div id="chartClientiWrap" style="position:relative;width:100%;">
+                    <canvas id="chartClienti"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    aggiornaCruscotto();
+}
+
+function onDashFilterChange() {
+    dashFilters.commessa = document.getElementById('dashCommessa').value;
+    dashFilters.dataDal = document.getElementById('dashDal').value;
+    dashFilters.dataAl = document.getElementById('dashAl').value;
+    // Reset selettore mese se l'utente modifica le date manualmente
+    const meseEl = document.getElementById('dashMese');
+    if (meseEl) meseEl.value = 'all';
+    aggiornaCruscotto();
+}
+
+function onDashMeseChange() {
+    const val = document.getElementById('dashMese').value;
+    if (val === 'all') {
+        dashFilters.dataDal = dashMinDate;
+        dashFilters.dataAl = dashMaxDate;
+    } else {
+        const range = meseKeyToRange(val);
+        dashFilters.dataDal = range.dal;
+        dashFilters.dataAl = range.al;
+    }
+    document.getElementById('dashDal').value = dashFilters.dataDal;
+    document.getElementById('dashAl').value = dashFilters.dataAl;
+    aggiornaCruscotto();
+}
+
+function renderSelectionTags() {
+    const el = document.getElementById('dashSelTags');
+    if (!el) return;
+    if (!hasActiveSelection()) { el.innerHTML = ''; return; }
+    const labels = { commessa: 'Commessa', operatore: 'Operatore', servizio: 'Servizio', fatturare: 'Da Fatturare', cliente: 'Cliente' };
+    let html = '';
+    for (const [dim, val] of Object.entries(dashSelection)) {
+        if (!val) continue;
+        const lbl = val.length > 25 ? val.slice(0, 23) + '...' : val;
+        html += `<span class="sel-tag"><span class="sel-dim">${labels[dim]}:</span> ${escapeHtml(lbl)} <span class="sel-x" onclick="toggleSelection('${dim}', dashSelection['${dim}'])">&times;</span></span>`;
+    }
+    html += `<button class="btn-reset-sel" onclick="resetSelection()">Reset filtri</button>`;
+    el.innerHTML = html;
+}
+
+function toggleOpExpandByIdx(idx) {
+    const op = _drillOpKeys[idx];
+    if (!op) return;
+    if (opExpandedSet.has(op)) opExpandedSet.delete(op);
+    else opExpandedSet.add(op);
+    aggiornaCruscotto();
+}
+
+function toggleCommExpandByIdx(idx) {
+    const entry = _drillCommKeys[idx];
+    if (!entry) return;
+    const key = entry.op + '|||' + entry.comm;
+    if (commExpandedMap.has(key)) commExpandedMap.delete(key);
+    else commExpandedMap.add(key);
+    aggiornaCruscotto();
+}
+
+function aggiornaCruscotto() {
+    if (!document.getElementById('dashOpTable')) return;
+    renderSelectionTags();
+
+    // ---- Operatore table con drill-down inline ----
+    _drillOpKeys = [];
+    _drillCommKeys = [];
+    const rowsForOp = getDashRowsFor('operatore');
+    const orePerOp = {};
+    const costoPerOp = {};
+    for (const r of rowsForOp) {
+        const op = r.operatorDisplayName || '?';
+        const ore = parseOreDecimali(r.workedTime);
+        orePerOp[op] = (orePerOp[op] || 0) + ore;
+        const mese = (r.date || '').slice(0, 7);
+        const tariffa = getCostoOrario(op, mese);
+        if (tariffa > 0) costoPerOp[op] = (costoPerOp[op] || 0) + tariffa * ore;
+    }
+    const opSorted = Object.entries(orePerOp).sort((a, b) => a[0].localeCompare(b[0]));
+    const totOreOp = opSorted.reduce((s, [, v]) => s + v, 0);
+    const totCostoOp = opSorted.reduce((s, [op]) => s + (costoPerOp[op] || 0), 0);
+    const selOp = dashSelection.operatore;
+    const showCosts = currentUser.canSeeCosts || currentUser.isAdmin;
+    const costCol = showCosts ? '<th style="text-align:right">Costo</th>' : '';
+
+    let opHtml = `<table class="op-table"><thead><tr><th>Operatore</th><th style="text-align:right">Ore</th>${costCol}</tr></thead><tbody>`;
+    for (const [op, ore] of opSorted) {
+        const isSelected = selOp === op;
+        const isDimmed = selOp && !isSelected;
+        const cls = isSelected ? 'op-selected' : (isDimmed ? 'op-dimmed' : '');
+        const costo = costoPerOp[op] || 0;
+        const costoStr = costo > 0 ? costo.toFixed(2) : '-';
+        const isOpExp = opExpandedSet.has(op);
+        const opArrow = isOpExp ? '▼' : '▶';
+        const opIdx = _drillOpKeys.push(op) - 1;
+
+        opHtml += `<tr class="${cls}" style="cursor:pointer" onclick="toggleSelection('operatore','${jsArg(op)}')">
+            <td class="op-name"><span class="op-tree-arrow" onclick="event.stopPropagation();toggleOpExpandByIdx(${opIdx})" title="${isOpExp ? 'Chiudi commesse' : 'Espandi commesse'}">${opArrow}</span>${escapeHtml(op)}</td>
+            <td style="text-align:right">${ore.toFixed(2)}</td>
+            ${showCosts ? `<td style="text-align:right">${costoStr}</td>` : ''}
+        </tr>`;
+
+        if (isOpExp) {
+            const rowsOp = getFullyFilteredRows().filter(r => r.operatorDisplayName === op);
+            const oreComm = {};
+            for (const r of rowsOp) {
+                const c = r.projectDescription || '?';
+                oreComm[c] = (oreComm[c] || 0) + parseOreDecimali(r.workedTime);
+            }
+            for (const [comm, oreC] of Object.entries(oreComm).sort((a, b) => b[1] - a[1])) {
+                const commKey = op + '|||' + comm;
+                const isCommExp = commExpandedMap.has(commKey);
+                const commArrow = isCommExp ? '▼' : '▶';
+                const commIdx = _drillCommKeys.push({ op, comm }) - 1;
+
+                opHtml += `<tr class="op-drill-comm">
+                    <td><span class="op-tree-arrow" onclick="toggleCommExpandByIdx(${commIdx})" title="${isCommExp ? 'Chiudi servizi' : 'Espandi servizi'}">${commArrow}</span>${escapeHtml(comm)}</td>
+                    <td style="text-align:right">${oreC.toFixed(2)}</td>
+                    ${showCosts ? '<td></td>' : ''}
+                </tr>`;
+
+                if (isCommExp) {
+                    const oreServ = {};
+                    for (const r of rowsOp.filter(r => r.projectDescription === comm)) {
+                        const s = r.serviceDescription || '?';
+                        oreServ[s] = (oreServ[s] || 0) + parseOreDecimali(r.workedTime);
+                    }
+                    for (const [serv, oreS] of Object.entries(oreServ).sort((a, b) => b[1] - a[1])) {
+                        opHtml += `<tr class="op-drill-serv">
+                            <td>${escapeHtml(serv)}</td>
+                            <td style="text-align:right">${oreS.toFixed(2)}</td>
+                            ${showCosts ? '<td></td>' : ''}
+                        </tr>`;
+                    }
+                }
+            }
+        }
+    }
+    const totCostoStr = totCostoOp > 0 ? totCostoOp.toFixed(2) : '-';
+    opHtml += `<tr class="op-total"><td>Totale</td><td style="text-align:right">${totOreOp.toFixed(2)}</td>${showCosts ? `<td style="text-align:right">${totCostoStr}</td>` : ''}</tr>`;
+    opHtml += '</tbody></table>';
+    document.getElementById('dashOpTable').innerHTML = opHtml;
+    const drillDiv = document.getElementById('dashOpDrill');
+    if (drillDiv) drillDiv.innerHTML = '';
+
+    aggiornaCruscottoCharts();
+}
+
+function renderOperatorDrill() {
+    const drillDiv = document.getElementById('dashOpDrill');
+    if (!drillDiv) return;
+    const selOp = dashSelection.operatore;
+    if (!selOp) { drillDiv.innerHTML = ''; return; }
+
+    // Righe dell'operatore selezionato (con tutti gli altri filtri applicati)
+    const rows = getFullyFilteredRows().filter(r => r.operatorDisplayName === selOp);
+    if (rows.length === 0) { drillDiv.innerHTML = ''; return; }
+
+    // Raggruppa per commessa
+    const orePerComm = {};
+    for (const r of rows) {
+        const c = r.projectDescription || '?';
+        orePerComm[c] = (orePerComm[c] || 0) + parseOreDecimali(r.workedTime);
+    }
+    const sorted = Object.entries(orePerComm).sort((a, b) => b[1] - a[1]);
+    const totOre = sorted.reduce((s, [, v]) => s + v, 0);
+
+    let html = `<div class="drill-panel">
+        <h4>Commesse di ${escapeHtml(selOp)}</h4>
+        <table class="drill-table"><thead><tr><th>Commessa</th><th style="text-align:right">Ore</th><th style="text-align:right">%</th></tr></thead><tbody>`;
+    for (const [comm, ore] of sorted) {
+        const pct = totOre > 0 ? (ore / totOre * 100).toFixed(1) : '0';
+        html += `<tr><td><span class="drill-link" onclick="showServiziDrill('${jsArg(selOp)}','${jsArg(comm)}')">${escapeHtml(comm)}</span></td><td style="text-align:right">${ore.toFixed(2)}</td><td style="text-align:right">${pct}%</td></tr>`;
+    }
+    html += `<tr style="font-weight:700;background:#eee"><td>Totale</td><td style="text-align:right">${totOre.toFixed(2)}</td><td style="text-align:right">100%</td></tr>`;
+    html += '</tbody></table><div id="dashServDrill"></div></div>';
+    drillDiv.innerHTML = html;
+}
+
+function showServiziDrill(opName, commessa) {
+    const servDiv = document.getElementById('dashServDrill');
+    if (!servDiv) return;
+
+    // Se clicca la stessa commessa, toggle chiudi
+    if (servDiv.dataset.active === commessa) { servDiv.innerHTML = ''; servDiv.dataset.active = ''; return; }
+    servDiv.dataset.active = commessa;
+
+    const rows = getFullyFilteredRows().filter(r =>
+        r.operatorDisplayName === opName && r.projectDescription === commessa
+    );
+    if (rows.length === 0) { servDiv.innerHTML = ''; return; }
+
+    const orePerServ = {};
+    for (const r of rows) {
+        const s = r.serviceDescription || '?';
+        orePerServ[s] = (orePerServ[s] || 0) + parseOreDecimali(r.workedTime);
+    }
+    const sorted = Object.entries(orePerServ).sort((a, b) => b[1] - a[1]);
+    const totOre = sorted.reduce((s, [, v]) => s + v, 0);
+
+    let html = `<div class="drill-sub">
+        <h4>Servizi: ${escapeHtml(commessa)}</h4>
+        <table class="drill-table"><thead><tr><th>Servizio</th><th style="text-align:right">Ore</th><th style="text-align:right">%</th></tr></thead><tbody>`;
+    for (const [serv, ore] of sorted) {
+        const pct = totOre > 0 ? (ore / totOre * 100).toFixed(1) : '0';
+        html += `<tr><td>${escapeHtml(serv)}</td><td style="text-align:right">${ore.toFixed(2)}</td><td style="text-align:right">${pct}%</td></tr>`;
+    }
+    html += `<tr style="font-weight:700;background:#eee"><td>Totale</td><td style="text-align:right">${totOre.toFixed(2)}</td><td style="text-align:right">100%</td></tr>`;
+    html += '</tbody></table></div>';
+    servDiv.innerHTML = html;
+}
+
+// Alla fine del ridimensionamento ricalcola grafici e treemap sulle nuove misure dei riquadri
+let dashResizeTimer = null;
+window.addEventListener('resize', () => {
+    clearTimeout(dashResizeTimer);
+    dashResizeTimer = setTimeout(() => {
+        if (document.querySelector('.cruscotto')) aggiornaCruscotto();
+    }, 150);
+});
+
+// Grafico a barre orizzontali delle ore per una dimensione del cross-filter (clic = seleziona)
+function disegnaBarreOre(dim, canvasId, wrapId, getEtichetta) {
+    const orePerVoce = {};
+    for (const r of getDashRowsFor(dim)) {
+        const k = getEtichetta(r);
+        orePerVoce[k] = (orePerVoce[k] || 0) + parseOreDecimali(r.workedTime);
+    }
+    const sorted = Object.entries(orePerVoce).sort((a, b) => b[1] - a[1]);
+    const labels = sorted.map(([k]) => k.length > 22 ? k.slice(0, 20) + '…' : k);
+    const values = sorted.map(([, v]) => Math.round(v * 100) / 100);
+    const fullNames = sorted.map(([k]) => k);
+    const sel = dashSelection[dim];
+    const colors = sorted.map(([k]) =>
+        sel ? (k === sel ? BAR_COLOR : BAR_COLOR_DIM) : BAR_COLOR
+    );
+
+    if (dashCharts[dim]) dashCharts[dim].destroy();
+    const ctx = document.getElementById(canvasId);
+    const wrap = document.getElementById(wrapId);
+    if (ctx && wrap) {
+        const barH = 24;
+        wrap.style.height = Math.max(sorted.length * barH + 30, wrap.parentElement.clientHeight) + 'px';
+        dashCharts[dim] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{ data: values, backgroundColor: colors, borderRadius: 3, maxBarThickness: 32 }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: {
+                        title: idx => fullNames[idx[0].dataIndex],
+                        label: c => c.raw.toFixed(2) + ' ore'
+                    }}
+                },
+                scales: {
+                    x: { grid: { color: '#eee' } },
+                    y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                },
+                onClick: (evt, elems) => {
+                    // Differito: la selezione ridisegna il grafico, che non va distrutto durante il proprio evento
+                    if (elems.length > 0) setTimeout(() => toggleSelection(dim, fullNames[elems[0].index]));
+                }
+            }
+        });
+    }
+}
+
+function aggiornaCruscottoCharts() {
+    if (!document.getElementById('dashTotOre')) return;
+    // ---- Stats: righe completamente filtrate ----
+    const allRows = getFullyFilteredRows();
+    let totOre = 0, totValore = 0;
+    const showCostsStats = currentUser.isAdmin || currentUser.canSeeCosts;
+    for (const r of allRows) {
+        const ore = parseOreDecimali(r.workedTime);
+        totOre += ore;
+        if (showCostsStats) {
+            const mese = (r.date || '').slice(0, 7);
+            totValore += ore * getCostoOrario(r.operatorDisplayName, mese);
+        }
+    }
+    document.getElementById('dashTotOre').textContent = totOre.toFixed(2).replace('.', ',');
+    document.getElementById('dashTotRapp').textContent = allRows.length;
+    const elValore = document.getElementById('dashTotValore');
+    if (elValore && showCostsStats)
+        elValore.textContent = '€' + Math.round(totValore).toLocaleString('it-IT');
+
+    // ---- 1) Bar chart commesse e clienti: ciascuno senza il proprio filtro ----
+    disegnaBarreOre('commessa', 'chartCommesse', 'chartCommesseWrap', r => r.projectDescription || '?');
+    disegnaBarreOre('cliente', 'chartClienti', 'chartClientiWrap', clienteRiga);
+
+    // ---- 2) Donut fatturare: usa righe senza filtro fatturare ----
+    // ---- 2) Treemap servizi: usa righe senza filtro servizio ----
+    const rowsForServ = getDashRowsFor('servizio');
+    const orePerServ = {};
+    for (const r of rowsForServ) {
+        const s = r.serviceDescription || '?';
+        orePerServ[s] = (orePerServ[s] || 0) + parseOreDecimali(r.workedTime);
+    }
+    const servSorted = Object.entries(orePerServ).sort((a, b) => b[1] - a[1]);
+    const top5 = servSorted.slice(0, 5);
+    const altroOre = servSorted.slice(5).reduce((s, [, v]) => s + v, 0);
+    const displayServ = altroOre > 0 ? [...top5, ['Altro', altroOre, servSorted.slice(5)]] : top5;
+    const totServOre = displayServ.reduce((s, [, v]) => s + v, 0);
+    const selServ = dashSelection.servizio;
+
+    const tmContainer = document.getElementById('dashTreemap');
+    if (tmContainer) {
+        tmContainer.innerHTML = buildTreemapHTML(displayServ, totServOre, (nome) => `toggleSelection('servizio','${jsArg(nome)}')`);
+        requestAnimationFrame(() => adjustTreemapText(tmContainer));
+    }
+}
+
+// ========================================================
+// CALENDARIO — Ore giornaliere per operatore
+// ========================================================
+
+let calAnno = new Date().getFullYear();
+let calMese = new Date().getMonth() + 1; // 1-12
+
+async function caricaCalendario() {
+    document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+    currentTable = null; sortCol = null; sortDir = 0;
+    document.querySelector('.rapportini-section').style.display = 'none';
+    document.querySelector('.results-header').style.display = 'none';
+    document.querySelector('.results-section').classList.add('cruscotto-mode');
+    document.getElementById('resultsInfo').textContent = '';
+
+    const container = document.getElementById('resultsContainer');
+    renderCalendarioUI(container);
+    await aggiornaCalendario();
+}
+
+function renderCalendarioUI(container) {
+    // Genera opzioni anno (da dati disponibili o range fisso)
+    const anniOptions = [2025, 2026, 2027].map(a =>
+        `<option value="${a}" ${a === calAnno ? 'selected' : ''}>${a}</option>`
+    ).join('');
+    const mesiOptions = NOMI_MESI.map((n, i) =>
+        `<option value="${i+1}" ${(i+1) === calMese ? 'selected' : ''}>${n}</option>`
+    ).join('');
+
+    container.innerHTML = `
+    <div class="calendario-container">
+        <h2 style="color:#1b3a5c;margin-bottom:14px;">Calendario Ore</h2>
+        <div class="calendario-selectors">
+            <div class="cal-group">
+                <label>Anno</label>
+                <select id="calAnno" onchange="onCalendarioChange()">${anniOptions}</select>
+            </div>
+            <div class="cal-group">
+                <label>Mese</label>
+                <select id="calMese" onchange="onCalendarioChange()">${mesiOptions}</select>
+            </div>
+        </div>
+        <div id="calTableContainer"><div class="loading"><div class="spinner"></div>Caricamento...</div></div>
+    </div>`;
+}
+
+async function onCalendarioChange() {
+    calAnno = parseInt(document.getElementById('calAnno').value);
+    calMese = parseInt(document.getElementById('calMese').value);
+    await aggiornaCalendario();
+}
+
+// Mappa dow JS (0=Dom..6=Sab) → chiave schedule
+const DOW_KEY = ['sun','mon','tue','wed','thu','fri','sat'];
+
+// Restituisce le ore previste per un operatore in un dato giorno (Date)
+function getOreAttese(opName, date) {
+    const sched = operatorSchedule[opName];
+    if (!sched) return null;
+    const key = DOW_KEY[date.getDay()];
+    const v = sched[key];
+    return (v != null && v > 0) ? v : null;
+}
+
+async function aggiornaCalendario() {
+    const tableContainer = document.getElementById('calTableContainer');
+    if (!tableContainer) return;
+    tableContainer.innerHTML = '<div class="loading"><div class="spinner"></div>Caricamento...</div>';
+
+    try {
+        // Carica schedule operatori (una volta sola, poi cached)
+        if (Object.keys(operatorSchedule).length === 0) {
+            try {
+                const sr = await fetch(`${API_BASE}/api/operators/schedule`);
+                if (sr.ok) operatorSchedule = await sr.json();
+            } catch (_) {}
+        }
+
+        const mm = String(calMese).padStart(2, '0');
+        const lastDay = new Date(calAnno, calMese, 0).getDate();
+        const dal = `${calAnno}-${mm}-01`;
+        const al  = `${calAnno}-${mm}-${String(lastDay).padStart(2, '0')}`;
+
+        const calOpFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+            ? ` AND LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+            : '';
+        const sql = `SELECT operatorDisplayName, date, workedTime FROM \`tymex-1a330.tymex_client.documents\` WHERE date BETWEEN '${dal}' AND '${al}'${calOpFilter} ORDER BY operatorDisplayName, date`;
+        const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql })
+        });
+        if (!resp.ok) throw new Error('Errore query');
+        const data = await resp.json();
+
+        // Tutti i giorni del mese con il loro day-of-week
+        const giorni = [];
+        for (let d = 1; d <= lastDay; d++) {
+            const dt = new Date(calAnno, calMese - 1, d);
+            const dow = dt.getDay();
+            if (dow > 0 && dow < 6) giorni.push({ d, dt }); // solo lun-ven
+        }
+
+        // Raggruppa ore per operatore e giorno
+        const oreMap = {};
+        for (const r of data.rows) {
+            const op = r.operatorDisplayName || '?';
+            const giorno = parseInt((r.date || '').slice(8, 10));
+            const ore = parseOreDecimali(r.workedTime);
+            if (!oreMap[op]) oreMap[op] = {};
+            oreMap[op][giorno] = (oreMap[op][giorno] || 0) + ore;
+        }
+
+        // Filtra operatori visibili secondo i permessi utente
+        const allowed = currentUser.allowedOperators && currentUser.allowedOperators.length > 0
+            ? new Set(currentUser.allowedOperators)
+            : null;
+        const operatori = Object.keys(oreMap)
+            .filter(op => !allowed || allowed.has(op))
+            .sort();
+        if (operatori.length === 0) {
+            tableContainer.innerHTML = '<p style="color:#888;text-align:center;padding:30px;">Nessun dato per questo mese.</p>';
+            return;
+        }
+
+        // Helper formattazione ore
+        const fmtOre = v => v % 1 === 0 ? v.toFixed(0) : v.toFixed(2).replace(/\.?0+$/, '');
+
+        // Helper classe colore
+        const calClass = (ore, attese) => {
+            if (attese === null) return ore > 0 ? 'has-data' : '';
+            const eps = 0.05;
+            if (Math.abs(ore - attese) <= eps) return 'cal-ok';
+            if (ore < attese)                   return 'cal-under';
+            return 'cal-over';
+        };
+
+        // Legenda
+        let legend = `<div style="display:flex;gap:14px;align-items:center;margin-bottom:10px;font-size:12px;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:16px;background:#c8e6c9;border:1px solid #a5d6a7;display:inline-block;border-radius:3px;"></span>Ore = previste</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:16px;background:#fff9c4;border:1px solid #ffe082;display:inline-block;border-radius:3px;"></span>Ore &lt; previste</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:16px;background:#ffcdd2;border:1px solid #ef9a9a;display:inline-block;border-radius:3px;"></span>Ore &gt; previste</span>
+        </div>`;
+
+        // Render tabella
+        let html = legend + '<div class="cal-table-wrap"><table class="cal-table">';
+        const GG_IT = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+        html += '<thead><tr><th class="cal-op-header">Operatore</th>';
+        for (const { d, dt } of giorni)
+            html += `<th style="line-height:1.2;">${d}<br><span style="font-weight:400;font-size:10px;opacity:0.75;">${GG_IT[dt.getDay()]}</span></th>`;
+        html += '<th class="cal-total">Tot</th></tr></thead><tbody>';
+
+        const totaliGiorno = {};
+        for (const op of operatori) {
+            html += `<tr><td class="cal-op">${escapeHtml(op)}</td>`;
+            let totOp = 0;
+            for (const { d, dt } of giorni) {
+                const ore = oreMap[op][d] || 0;
+                totOp += ore;
+                totaliGiorno[d] = (totaliGiorno[d] || 0) + ore;
+                const attese = getOreAttese(op, dt);
+                const cls = calClass(ore, attese);
+                const title = attese !== null ? ` title="Previste: ${attese}h"` : '';
+                html += ore > 0
+                    ? `<td class="cal-val ${cls}"${title}>${fmtOre(ore)}</td>`
+                    : `<td class="cal-val"></td>`;
+            }
+            html += `<td class="cal-total">${fmtOre(totOp)}</td></tr>`;
+        }
+
+        // Riga totali
+        html += '<tr style="border-top:2px solid #1b3a5c;"><td class="cal-op" style="font-weight:700;">TOTALE</td>';
+        let grandTotal = 0;
+        for (const { d } of giorni) {
+            const t = totaliGiorno[d] || 0;
+            grandTotal += t;
+            html += t > 0
+                ? `<td class="cal-val has-data" style="font-weight:700;">${fmtOre(t)}</td>`
+                : '<td class="cal-val"></td>';
+        }
+        html += `<td class="cal-total">${fmtOre(grandTotal)}</td></tr>`;
+        html += '</tbody></table></div>';
+
+        tableContainer.innerHTML = html;
+    } catch (e) {
+        tableContainer.innerHTML = `<div class="error">Errore: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+// ========================================================
+// Helper mesi
+const NOMI_MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+// Helper: estrae mesi disponibili da un array di righe con campo date
+function getAvailableMesi(rows) {
+    const mesiSet = new Set();
+    for (const r of rows) {
+        const d = (r.date || r.Data || '').slice(0, 7);
+        if (d.length === 7) mesiSet.add(d);
+    }
+    return [...mesiSet].sort().map(k => {
+        const [anno, mm] = k.split('-');
+        return { key: k, label: `${NOMI_MESI[parseInt(mm)-1]} ${anno}` };
+    });
+}
+
+// Helper: converte '2026-01' in { dal: '2026-01-01', al: '2026-01-31' }
+function meseKeyToRange(meseKey) {
+    const [anno, mm] = meseKey.split('-');
+    const y = parseInt(anno), m = parseInt(mm);
+    const lastDay = new Date(y, m, 0).getDate();
+    return { dal: `${anno}-${mm}-01`, al: `${anno}-${mm}-${String(lastDay).padStart(2,'0')}` };
+}
+
+function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escapeAttr(s) {
+    return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// Stringa da mettere tra apici in un handler inline: onclick="fn('${jsArg(nome)}')"
+function jsArg(s) {
+    return escapeAttr(String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
+}
+
+// ========================================================
+// PANNELLO ADMIN
+// ========================================================
+
+async function caricaAdmin() {
+    // Reset stato locale permessi ad ogni apertura del pannello
+    Object.keys(_permEdits).forEach(k => delete _permEdits[k]);
+
+    document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+    document.getElementById('btnAdmin').classList.add('active');
+    document.querySelector('.rapportini-section').style.display = 'none';
+    document.querySelector('.results-header').style.display = 'none';
+    document.querySelector('.results-section').classList.remove('cruscotto-mode');
+    document.getElementById('resultsInfo').textContent = '';
+
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div>Caricamento pannello admin...</div>';
+
+    try {
+        const [usersResp, permsResp, opsResp] = await Promise.all([
+            fetch(`${API_BASE}/api/admin/users`),
+            fetch(`${API_BASE}/api/admin/permissions`),
+            fetch(`${API_BASE}/api/bigquery/query`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ sql: 'SELECT DISTINCT operatorDisplayName FROM `tymex-1a330.tymex_client.documents` ORDER BY 1' })
+            })
+        ]);
+        const users    = await usersResp.json();
+        const perms    = await permsResp.json();
+        const opsData  = await opsResp.json();
+        const operators = opsData.rows.map(r => r.operatorDisplayName).filter(Boolean);
+
+        container.innerHTML = renderAdminPanel(users, perms, operators);
+    } catch(e) {
+        container.innerHTML = `<div class="error">Errore: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function renderAdminPanel(users, perms, operators) {
+    return `<div class="admin-container">
+        <h2 style="color:#1b3a5c;margin-bottom:16px;">Pannello Amministrazione</h2>
+        <div class="admin-tabs">
+            <button class="admin-tab-btn active" onclick="adminShowTab('utenti',this)">Utenti</button>
+            <button class="admin-tab-btn" onclick="adminShowTab('permessi',this)">Permessi RLS</button>
+        </div>
+        <div id="adminTabUtenti" class="admin-tab-content">
+            ${renderAdminUtenti(users, operators)}
+        </div>
+        <div id="adminTabPermessi" class="admin-tab-content" style="display:none">
+            ${renderAdminPermessi(users, perms, operators)}
+        </div>
+    </div>`;
+}
+
+function adminShowTab(tab, btn) {
+    document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('adminTabUtenti').style.display  = tab === 'utenti'   ? '' : 'none';
+    document.getElementById('adminTabPermessi').style.display = tab === 'permessi' ? '' : 'none';
+}
+
+function adminGeneratePassword() {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#';
+    let pwd = '';
+    for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    const el = document.getElementById('fPassword');
+    el.value = pwd;
+    el.type = 'text';
+}
+
+async function setDefaultPermissions(username, displayName) {
+    await fetch(`${API_BASE}/api/admin/permissions`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username, allowedOperators: [displayName], canSeeCosts: false })
+    });
+}
+
+async function adminAddAllOperators(operators) {
+    const existing = new Set(
+        [...document.querySelectorAll('#adminUserTable tbody tr td:first-child')].map(td => td.textContent.trim())
+    );
+    const toAdd = operators.filter(op => {
+        const uname = op.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        return uname && !existing.has(uname);
+    });
+    if (toAdd.length === 0) return alert('Tutti gli operatori sono già presenti come utenti.');
+    if (!confirm(`Aggiungere ${toAdd.length} utenti?\n${toAdd.map(op => '• ' + op).join('\n')}`)) return;
+
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#';
+    const genPwd = () => { let p=''; for(let i=0;i<10;i++) p+=chars[Math.floor(Math.random()*chars.length)]; return p; };
+
+    const results = [];
+    for (const op of toAdd) {
+        const username = op.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        const password = genPwd();
+        results.push({ displayName: op, username, password });
+        await fetch(`${API_BASE}/api/admin/users`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username, password, displayName: op, isAdmin: false })
+        });
+        await setDefaultPermissions(username, op);
+    }
+    alert('Utenti creati:\n' + results.map(r => `${r.displayName}  →  ${r.username} / ${r.password}`).join('\n'));
+    caricaAdmin();
+}
+
+function renderAdminUtenti(users, operators) {
+    const rows = users.map(u => `
+        <tr>
+            <td>${escapeHtml(u.username)}</td>
+            <td>${escapeHtml(u.displayName)}</td>
+            <td>${u.isAdmin ? '<span style="color:#2e7d6a;font-weight:600;">Admin</span>' : 'Utente'}</td>
+            <td>
+                <button class="admin-btn admin-btn-edit" onclick="adminEditUser('${jsArg(u.username)}','${jsArg(u.password ?? '')}','${jsArg(u.displayName)}',${u.isAdmin})">Modifica</button>
+                <button class="admin-btn admin-btn-del" style="margin-left:6px" onclick="adminDeleteUser('${jsArg(u.username)}')">Elimina</button>
+            </td>
+        </tr>`).join('');
+
+    // Operatori senza account
+    const existingDisplayNames = new Set(users.map(u => u.displayName.toLowerCase()));
+    const newOps = (operators || []).filter(op => !existingDisplayNames.has(op.toLowerCase()));
+    const newOpsSection = newOps.length === 0 ? '' : `
+        <div style="background:#fff3cd;border:1px solid #f0ad4e;border-radius:6px;padding:12px;margin-bottom:14px;">
+            <strong style="color:#856404;">⚠ ${newOps.length} operatore/i BigQuery senza account:</strong>
+            <ul style="margin:8px 0 10px 18px;font-size:13px;">
+                ${newOps.map(op => `<li>${escapeHtml(op)}</li>`).join('')}
+            </ul>
+            <button class="admin-btn" style="background:#e0a800;color:#fff" onclick='adminAddAllOperators(${JSON.stringify(newOps)})'>+ Aggiungi questi operatori</button>
+        </div>`;
+
+    return `
+        <h3 style="margin-bottom:12px;color:#1b3a5c;">Aggiungi / Modifica Utente</h3>
+        ${newOpsSection}
+        <div class="admin-form" id="userForm">
+            <label>Username<input id="fUsername" placeholder="es. mario_rossi" style="width:140px"></label>
+            <label>Password<input id="fPassword" placeholder="password" style="width:140px">
+                <button type="button" class="admin-btn" style="margin-left:4px;padding:2px 8px;font-size:12px" onclick="adminGeneratePassword()">Genera</button>
+            </label>
+            <label>Nome visualizzato<input id="fDisplayName" placeholder="es. Mario Rossi" style="width:180px"></label>
+            <label style="flex-direction:row;align-items:center;gap:6px;"><input id="fIsAdmin" type="checkbox"> Admin</label>
+            <button class="admin-btn admin-btn-save" onclick="adminSaveUser()">Salva</button>
+            <button class="admin-btn" style="background:#aaa;color:white" onclick="adminClearForm()">Pulisci</button>
+        </div>
+        <table class="admin-table" id="adminUserTable">
+            <thead><tr><th>Username</th><th>Nome</th><th>Ruolo</th><th>Azioni</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+function renderAdminPermessi(users, perms, operators) {
+    const nonAdmins = users.filter(u => !u.isAdmin);
+    const allUsersForPerm = users; // mostra tutti, inclusi admin (che vedono tutto per default)
+
+    // Aggiunge displayName degli utenti non-admin non già presenti come operatori BigQuery
+    const opSet = new Set(operators.map(o => o.toLowerCase()));
+    const extraOps = nonAdmins.map(u => u.displayName).filter(n => n && !opSet.has(n.toLowerCase()));
+    const allOperators = [...operators, ...extraOps];
+
+    const opHeaders = allOperators.map(op => {
+        const parts = op.split(' ');
+        const label = parts.length > 1 ? `${parts[0]}<br><span style="font-weight:400">${parts.slice(1).join(' ')}</span>` : escapeHtml(op);
+        return `<th class="perm-op" title="${escapeAttr(op)}">${label}</th>`;
+    }).join('');
+
+    const rows = allUsersForPerm.map(u => {
+        const uPerm = perms[u.username]; // oggetto {allowedOperators, canSeeCosts} | undefined
+        const allowedOps = uPerm?.allowedOperators ?? null;
+        const isAll  = u.isAdmin || allowedOps === null;
+        const allowedSet = new Set(Array.isArray(allowedOps) ? allowedOps : []);
+        const canSeeCosts = u.isAdmin || (uPerm?.canSeeCosts ?? false);
+
+        // Cella checkbox "Costi"
+        const costsCell = u.isAdmin
+            ? `<td style="text-align:center;background:#fff9e6"><input type="checkbox" data-user="${escapeAttr(u.username)}" data-costs="1" checked disabled></td>`
+            : `<td style="text-align:center;background:#fff9e6"><input type="checkbox" data-user="${escapeAttr(u.username)}" data-costs="1" ${canSeeCosts ? 'checked' : ''} onchange="permCostsChange(this)"></td>`;
+
+        const checkboxes = allOperators.map(op => {
+            const checked = isAll || allowedSet.has(op) ? 'checked' : '';
+            const disabled = u.isAdmin ? 'disabled' : '';
+            return `<td><input type="checkbox" data-user="${escapeAttr(u.username)}" data-op="${escapeAttr(op)}" ${checked} ${disabled} onchange="permCheckboxChange(this)"></td>`;
+        }).join('');
+
+        const allToggleClass = isAll && !u.isAdmin ? 'active' : '';
+        const allToggleDisabled = u.isAdmin ? 'disabled style="opacity:0.5"' : `onclick="permToggleAll('${jsArg(u.username)}', ${!isAll})"`;
+        return `<tr>
+            <td class="perm-user-cell">
+                ${escapeHtml(u.displayName)}
+                ${!u.isAdmin ? `<br><button class="perm-all-toggle ${allToggleClass}" ${allToggleDisabled}>${isAll?'✓ Accesso totale':'Accesso totale'}</button>` : '<br><small style="color:#888">Admin</small>'}
+            </td>
+            ${costsCell}
+            ${checkboxes}
+        </tr>`;
+    }).join('');
+
+    return `
+        <h3 style="margin-bottom:8px;color:#1b3a5c;">Matrice Permessi Operatori</h3>
+        <p style="color:#888;font-size:13px;margin-bottom:14px;">Spunta gli operatori che ogni utente può visualizzare. "Accesso totale" = nessun filtro. La colonna <b>Costi</b> abilita la visibilità dei costi orari.</p>
+        <div class="perm-grid-wrap">
+            <table class="perm-grid" id="permGrid">
+                <thead><tr><th class="perm-user">Utente</th><th class="perm-op" style="background:#fff3cd;border-bottom:2px solid #f0ad4e;">Costi</th>${opHeaders}</tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <div class="perm-save-row">
+            <button class="admin-btn admin-btn-save" onclick="adminSavePermissions()">Salva Permessi</button>
+            <span id="permSaveMsg" style="font-size:13px;color:#2e7d6a;"></span>
+        </div>`;
+}
+
+// Stato locale permessi in editing
+const _permEdits = {}; // {username: Set<string> | null}
+
+function permCostsChange(cb) {
+    // Gestito direttamente dal checkbox, nessuno stato locale necessario
+}
+
+function permCheckboxChange(cb) {
+    const user = cb.dataset.user;
+    const op   = cb.dataset.op;
+    if (!_permEdits[user]) _permEdits[user] = new Set();
+    const s = _permEdits[user];
+    if (s === null) return;
+    cb.checked ? s.add(op) : s.delete(op);
+    // Aggiorna bottone "Accesso totale"
+    const row = cb.closest('tr');
+    const btn = row.querySelector('.perm-all-toggle');
+    if (btn) btn.classList.remove('active');
+}
+
+function permToggleAll(username, makeAll) {
+    _permEdits[username] = makeAll ? null : new Set();
+    const row = document.querySelector(`input[data-user="${CSS.escape(username)}"]`)?.closest('tr');
+    if (!row) return;
+    row.querySelectorAll(`input[data-user]`).forEach(cb => { cb.checked = makeAll; });
+    const btn = row.querySelector('.perm-all-toggle');
+    if (btn) { btn.textContent = makeAll ? '✓ Accesso totale' : 'Accesso totale'; btn.classList.toggle('active', makeAll); }
+}
+
+async function adminSavePermissions() {
+    const msgEl = document.getElementById('permSaveMsg');
+    msgEl.textContent = 'Salvataggio...';
+
+    const grid = document.getElementById('permGrid');
+
+    // Raccoglie canSeeCosts dai checkbox data-costs
+    const costsMap = {};
+    grid.querySelectorAll('input[data-costs]:not([disabled])').forEach(cb => {
+        costsMap[cb.dataset.user] = cb.checked;
+    });
+
+    // Raccoglie operatori abilitati per utenti non in _permEdits
+    const byUser = {};
+    grid.querySelectorAll('input[data-op]:not([disabled])').forEach(cb => {
+        const u = cb.dataset.user;
+        if (!byUser[u]) byUser[u] = [];
+        if (cb.checked) byUser[u].push(cb.dataset.op);
+    });
+
+    // _permEdits sovrascrive solo per "Accesso totale" (null); per i Set usa byUser (stato reale dei checkbox)
+    const allowedMap = { ...byUser };
+    for (const [u, v] of Object.entries(_permEdits)) {
+        if (v === null) allowedMap[u] = null;
+    }
+
+    // Admin: sempre null (vede tutto)
+    grid.querySelectorAll('input[data-op][disabled]').forEach(cb => { allowedMap[cb.dataset.user] = null; });
+
+    // Unione di tutti gli username coinvolti
+    const allUsernames = new Set([...Object.keys(allowedMap), ...Object.keys(costsMap)]);
+
+    // Costruisce payload bulk {username: {allowedOperators, canSeeCosts}}
+    const bulk = {};
+    for (const username of allUsernames) {
+        bulk[username] = {
+            allowedOperators: allowedMap[username] ?? null,
+            canSeeCosts: costsMap[username] ?? false
+        };
+    }
+
+    try {
+        const resp = await fetch(`${API_BASE}/api/admin/permissions/bulk`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(bulk)
+        });
+        if (!resp.ok) {
+            msgEl.style.color = '#c00';
+            msgEl.textContent = `Errore HTTP ${resp.status}`;
+            return;
+        }
+        const result = await resp.json();
+        msgEl.style.color = '#2e7d6a';
+        msgEl.textContent = result.persisted ? '✓ Salvato' : '⚠ Salvato in memoria (sync Railway fallita)';
+        setTimeout(() => { msgEl.textContent = ''; msgEl.style.color = ''; }, 4000);
+    } catch(e) {
+        msgEl.style.color = '#c00';
+        msgEl.textContent = 'Errore: ' + e.message;
+    }
+}
+
+async function adminSaveUser() {
+    const username    = document.getElementById('fUsername').value.trim();
+    const password    = document.getElementById('fPassword').value;
+    const displayName = document.getElementById('fDisplayName').value.trim();
+    const isAdmin     = document.getElementById('fIsAdmin').checked;
+    if (!username || !password || !displayName) return alert('Compila tutti i campi');
+
+    // Verifica se è un nuovo utente (non già in tabella)
+    const isNew = ![...document.querySelectorAll('#adminUserTable tbody tr td:first-child')]
+        .some(td => td.textContent.trim() === username);
+
+    await fetch(`${API_BASE}/api/admin/users`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username, password, displayName, isAdmin })
+    });
+
+    if (isNew && !isAdmin) await setDefaultPermissions(username, displayName);
+
+    adminClearForm();
+    caricaAdmin();
+}
+
+function adminClearForm() {
+    ['fUsername','fPassword','fDisplayName'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fIsAdmin').checked = false;
+}
+
+function adminEditUser(username, password, displayName, isAdmin) {
+    document.getElementById('fUsername').value    = username;
+    document.getElementById('fPassword').value    = password;
+    document.getElementById('fPassword').type     = 'text';
+    document.getElementById('fDisplayName').value = displayName;
+    document.getElementById('fIsAdmin').checked   = isAdmin;
+    document.getElementById('fUsername').focus();
+}
+
+async function adminDeleteUser(username) {
+    if (!confirm(`Eliminare l'utente "${username}"?`)) return;
+    await fetch(`${API_BASE}/api/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+    caricaAdmin();
+}
+
+// Mostra bottone Admin, nome utente e logout dopo che currentUser è caricato
+function initAdminButton() {
+    if (currentUser.isAdmin) document.getElementById('btnAdmin').style.display = '';
+
+    const el = document.getElementById('headerUsername');
+    if (el && currentUser.displayName) el.textContent = currentUser.displayName;
+}
+
+function doLogout() {
+    // Basic Auth: invia credenziali errate per forzare il browser a dimenticare quelle salvate
+    // Funziona in Firefox/Safari; in Chrome potrebbe richiedere di chiudere il tab
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/auth/me', true, '__logout__', '__logout__');
+    xhr.onloadend = () => window.location.reload();
+    xhr.send();
+}
+
+// ========================================================
+// HOME PERSONALE (utenti non-admin)
+// ========================================================
+let homeAnno = null, homeMese = null;
+let homeRows = [], homeSelectedComm = null, homeChartInstance = null;
+
+function refreshHomeTreemap() {
+    const filteredRows = homeSelectedComm
+        ? homeRows.filter(r => (r.projectDescription || '?') === homeSelectedComm)
+        : homeRows;
+    const orePerServ = {};
+    for (const r of filteredRows) {
+        const s = r.serviceName || '?';
+        orePerServ[s] = (orePerServ[s] || 0) + parseOreDecimali(r.workedTime);
+    }
+    const servSorted = Object.entries(orePerServ).sort((a,b) => b[1]-a[1]);
+    const top5 = servSorted.slice(0, 5);
+    const altroOre = servSorted.slice(5).reduce((s,[,v]) => s+v, 0);
+    const display = altroOre > 0 ? [...top5, ['Altro', altroOre, servSorted.slice(5)]] : top5;
+    const totOre = display.reduce((s,[,v]) => s+v, 0);
+    const tmEl = document.getElementById('homeTreemap');
+    const titleEl = document.getElementById('homeTreemapTitle');
+    if (titleEl) {
+        if (homeSelectedComm) {
+            const label = homeSelectedComm.length > 28 ? homeSelectedComm.slice(0,26)+'…' : homeSelectedComm;
+            titleEl.innerHTML = `Servizi per: <span style="color:#3B5BDB;">${escapeHtml(label)}</span> <span style="font-size:11px;color:#aaa;cursor:pointer;" onclick="homeSelectedComm=null;refreshHomeTreemap();updateHomeChartColors();" title="Rimuovi filtro">✕</span>`;
+        } else {
+            titleEl.textContent = 'Top Servizi per ore';
+        }
+    }
+    if (tmEl) {
+        if (display.length > 0) {
+            tmEl.innerHTML = buildTreemapHTML(display, totOre, null);
+            requestAnimationFrame(() => adjustTreemapText(tmEl));
+        } else {
+            tmEl.innerHTML = '<div style="color:#aaa;font-size:12px;padding:8px;">Nessun dato per questa commessa</div>';
+        }
+    }
+}
+
+function updateHomeChartColors() {
+    if (!homeChartInstance) return;
+    homeChartInstance.data.datasets[0].backgroundColor = homeChartInstance.data.labels.map((_, i) =>
+        homeSelectedComm === null || homeSelectedComm === homeChartInstance._commNames[i]
+            ? '#3B5BDB' : 'rgba(59,91,219,0.25)'
+    );
+    homeChartInstance.update('none');
+}
+
+function buildTreemapHTML(items, totOre, onclickFn) {
+    const GAP = 0.4;
+    const totalGap = GAP * (items.length - 1);
+    let leftPct = 0;
+    return items.map(([nome, ore, dettaglio], i) => {
+        const rawPct = totOre > 0 ? ore / totOre * 100 : 0;
+        const widthPct = rawPct * (100 - totalGap) / 100;
+        const left = leftPct;
+        leftPct += widthPct + (i < items.length - 1 ? GAP : 0);
+        const bg = TREEMAP_COLORS[i % TREEMAP_COLORS.length];
+        const oc = onclickFn ? ` onclick="${onclickFn(nome)}"` : '';
+        // Il blocco "Altro" mostra al passaggio del mouse il dettaglio dei servizi raggruppati
+        const tip = dettaglio
+            ? ` data-altro="${escapeAttr(JSON.stringify(dettaglio))}" onmouseenter="showAltroTooltip(event, this)" onmousemove="moveAltroTooltip(event)" onmouseleave="hideServiceTooltip()"`
+            : ` title="${escapeAttr(nome)}: ${ore.toFixed(2)}h (${rawPct.toFixed(1)}%)"`;
+        return `<div data-tm-pct="${widthPct.toFixed(3)}" style="position:absolute;left:${left.toFixed(3)}%;width:${widthPct.toFixed(3)}%;height:100%;background:${bg};border-radius:4px;overflow:hidden;box-sizing:border-box;cursor:${onclickFn?'pointer':'default'};"${oc}${tip}>
+            <span class="tm-label-name" style="position:absolute;top:7px;left:6px;right:4px;color:white;font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(nome)}</span>
+            <span class="tm-label-hours" style="position:absolute;bottom:7px;left:6px;color:rgba(255,255,255,0.92);font-size:11px;font-weight:600;">${ore.toFixed(1)}h</span>
+        </div>`;
+    }).join('');
+}
+
+function adjustTreemapText(container) {
+    const cw = container.offsetWidth;
+    container.querySelectorAll('[data-tm-pct]').forEach(block => {
+        const bw = cw * parseFloat(block.dataset.tmPct) / 100;
+        const nameEl = block.querySelector('.tm-label-name');
+        const hoursEl = block.querySelector('.tm-label-hours');
+        if (!nameEl) return;
+        if (bw < 28) {
+            nameEl.style.display = 'none';
+            if (hoursEl) hoursEl.style.display = 'none';
+        } else if (bw < 62) {
+            nameEl.style.cssText = 'position:absolute;top:6px;left:0;right:0;color:white;font-size:10px;font-weight:700;writing-mode:vertical-rl;transform:rotate(180deg);text-align:left;overflow:hidden;white-space:nowrap;max-height:90px;margin:auto;width:fit-content;left:50%;transform:translateX(-50%) rotate(180deg);';
+            if (hoursEl) hoursEl.style.cssText = 'display:none';
+        }
+    });
+}
+
+async function caricaHome(annoSel, meseSel) {
+    document.querySelector('.rapportini-section').style.display = 'none';
+    document.querySelector('.results-header').style.display = 'none';
+    document.querySelector('.results-section').classList.add('cruscotto-mode');
+    document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+    document.getElementById('btnHome')?.classList.add('active');
+    currentTable = null;
+
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div>Caricamento...</div>';
+
+    try {
+        const now = new Date();
+        const anno = annoSel || homeAnno || now.getFullYear();
+        const mese = (meseSel !== undefined && meseSel !== null) ? meseSel : (homeMese !== null ? homeMese : (now.getMonth() + 1));
+        homeAnno = anno; homeMese = mese;
+        const isTuttoAnno = (mese === 0);
+        const mm   = isTuttoAnno ? null : String(mese).padStart(2, '0');
+        const isCurrentMonth = !isTuttoAnno && (anno === now.getFullYear() && mese === (now.getMonth() + 1));
+        const isCurrentYear  = anno === now.getFullYear();
+        const oggi = now.toISOString().slice(0, 10);
+        const lastDay = isTuttoAnno ? 31 : new Date(anno, mese, 0).getDate();
+        const dal  = isTuttoAnno ? `${anno}-01-01` : `${anno}-${mm}-01`;
+        const al   = isTuttoAnno ? (isCurrentYear ? oggi : `${anno}-12-31`)
+                                 : (isCurrentMonth ? oggi : `${anno}-${mm}-${String(lastDay).padStart(2,'0')}`);
+
+        // Carica schedule se non già in cache
+        if (Object.keys(operatorSchedule).length === 0) {
+            try {
+                const sr = await fetch(`${API_BASE}/api/operators/schedule`);
+                if (sr.ok) operatorSchedule = await sr.json();
+            } catch(_) {}
+        }
+
+        // Query ore del mese corrente
+        const opF = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+            ? ` AND LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+            : '';
+        const sql = `SELECT date, workedTime, projectDescription, serviceName FROM \`tymex-1a330.tymex_client.documents\` WHERE date BETWEEN '${dal}' AND '${al}'${opF} ORDER BY date DESC`;
+        const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql })
+        });
+        if (!resp.ok) throw new Error('Errore query');
+        const data = await resp.json();
+
+        // Raggruppa ore per giorno
+        let oreTotali = 0;
+        const orePerGiorno = {};
+        for (const r of data.rows) {
+            const ore = parseOreDecimali(r.workedTime);
+            oreTotali += ore;
+            if (r.date) { const dk = String(r.date).slice(0, 10); orePerGiorno[dk] = (orePerGiorno[dk] || 0) + ore; }
+        }
+
+        // Schedule dell'utente
+        const myName = currentUser.allowedOperators?.[0] || currentUser.displayName;
+        const sched  = operatorSchedule[Object.keys(operatorSchedule).find(k => k.toLowerCase() === myName?.toLowerCase())] || {};
+        const DOW_KEY2 = ['sun','mon','tue','wed','thu','fri','sat'];
+        const todayN = isCurrentMonth ? now.getDate() : (isTuttoAnno ? 0 : lastDay);
+
+        // Giorni lavorativi trascorsi: ore attese e giorni mancanti
+        let oreAttese = 0, oreObiettivoMese = 0;
+        const giorniMancanti = [];
+        if (isTuttoAnno) {
+            // Somma obiettivo su tutti i mesi dell'anno
+            for (let m = 1; m <= 12; m++) {
+                const daysInMonth = new Date(anno, m, 0).getDate();
+                const mmm = String(m).padStart(2,'0');
+                const cutDay = (isCurrentYear && m === now.getMonth()+1) ? now.getDate()
+                             : (isCurrentYear && m > now.getMonth()+1) ? 0 : daysInMonth;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dt  = new Date(anno, m - 1, d);
+                    const key = DOW_KEY2[dt.getDay()];
+                    const att = (sched[key] != null && sched[key] > 0) ? sched[key] : 0;
+                    oreObiettivoMese += att;
+                    if (d <= cutDay && att > 0) oreAttese += att;
+                }
+            }
+        } else {
+            for (let d = 1; d <= lastDay; d++) {
+                const dt  = new Date(anno, mese - 1, d);
+                const key = DOW_KEY2[dt.getDay()];
+                const att = (sched[key] != null && sched[key] > 0) ? sched[key] : 0;
+                oreObiettivoMese += att;
+                if (d <= todayN && att > 0) {
+                    oreAttese += att;
+                    const ds = `${anno}-${mm}-${String(d).padStart(2, '0')}`;
+                    if ((orePerGiorno[ds] || 0) === 0) giorniMancanti.push({ ds, d, dow: dt.getDay() });
+                }
+            }
+        }
+
+        // Colore avanzamento
+        const ratio = oreAttese > 0 ? oreTotali / oreAttese : 1;
+        const fillColor = ratio >= 0.95 ? '#2e7d32' : ratio >= 0.7 ? '#f57c00' : '#c62828';
+        const percBarra = oreObiettivoMese > 0 ? Math.min(100, Math.round(oreTotali / oreObiettivoMese * 100)) : 0;
+
+        const NOMI_MESI_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+        const GG_IT_S = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+        const fmtDate = ds => { const p = ds.split('-'); return `${p[2]}/${p[1]}`; };
+
+        // Ultimi 8 rapportini
+        const recenti = data.rows.slice(0, 8);
+
+        // Giorni mancanti: max 10 (solo per singolo mese)
+        const mancHtml = isTuttoAnno ? '' : (giorniMancanti.length === 0
+            ? `<p class="home-ok-msg">✓ Nessun giorno lavorativo senza rapportini fino ad oggi!</p>`
+            : `<div class="home-missing-list">${giorniMancanti.slice(0, 10).map(g =>
+                `<span class="home-missing-chip past">${GG_IT_S[g.dow]} ${fmtDate(g.ds)}</span>`).join('')}
+              ${giorniMancanti.length > 10 ? `<span class="home-missing-chip past">+${giorniMancanti.length - 10} altri</span>` : ''}</div>`);
+
+        container.innerHTML = `
+        <div class="home-page">
+            <div class="home-greeting">Ciao, ${escapeHtml(currentUser.displayName)}</div>
+            <div class="home-subtitle" style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
+                <select onchange="caricaHome(homeAnno, parseInt(this.value))" style="border:none;background:transparent;font-size:13px;color:#555;font-weight:600;cursor:pointer;padding:2px 4px;border-radius:4px;border-bottom:1px solid #ccc;">
+                    <option value="0" ${mese===0?'selected':''}>Tutto</option>
+                    ${NOMI_MESI_IT.map((n,i) => `<option value="${i+1}" ${i+1===mese?'selected':''}>${n}</option>`).join('')}
+                </select>
+                <select onchange="caricaHome(parseInt(this.value), homeMese)" style="border:none;background:transparent;font-size:13px;color:#555;font-weight:600;cursor:pointer;padding:2px 4px;border-radius:4px;border-bottom:1px solid #ccc;">
+                    ${[2024,2025,2026,2027].map(a => `<option value="${a}" ${a===anno?'selected':''}>${a}</option>`).join('')}
+                </select>
+            </div>
+
+            <div class="home-cards">
+                <div class="home-card">
+                    <div class="hc-label">Ore registrate</div>
+                    <div class="hc-value" style="color:${fillColor}">${oreTotali.toFixed(2).replace('.',',')}</div>
+                    <div class="hc-sub">su ${oreAttese > 0 ? oreAttese.toFixed(0)+' attese a oggi' : 'nessun obiettivo impostato'}</div>
+                </div>
+                <div class="home-card">
+                    <div class="hc-label">${isTuttoAnno ? 'Obiettivo anno' : 'Obiettivo mese'}</div>
+                    <div class="hc-value">${oreObiettivoMese > 0 ? oreObiettivoMese.toFixed(0) : '—'}</div>
+                    <div class="hc-sub">ore totali previste</div>
+                </div>
+                <div class="home-card">
+                    <div class="hc-label">Rapportini</div>
+                    <div class="hc-value" style="color:#3B5BDB">${data.rows.length}</div>
+                    <div class="hc-sub">${isTuttoAnno ? 'quest\'anno' : 'questo mese'}</div>
+                </div>
+                ${isTuttoAnno ? '' : `<div class="home-card">
+                    <div class="hc-label">Giorni mancanti</div>
+                    <div class="hc-value" style="color:${giorniMancanti.length === 0 ? '#2e7d32' : '#c62828'}">${giorniMancanti.length}</div>
+                    <div class="hc-sub">fino ad oggi</div>
+                </div>`}
+            </div>
+
+            ${oreObiettivoMese > 0 ? `
+            <div class="home-progress-wrap">
+                <div class="home-progress-label">
+                    <span>Avanzamento mese</span>
+                    <span style="color:${fillColor};font-weight:700">${percBarra}%</span>
+                </div>
+                <div class="home-progress-bar">
+                    <div class="home-progress-fill" style="width:${percBarra}%;background:${fillColor}"></div>
+                </div>
+                <div style="font-size:11px;color:#aaa;margin-top:6px;">
+                    ${oreTotali.toFixed(2).replace('.',',')} ore registrate su ${oreObiettivoMese.toFixed(0)} previste per il mese
+                </div>
+            </div>` : ''}
+
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                <div class="home-progress-wrap" style="flex:1;min-width:280px;margin-bottom:0;">
+                    <div class="home-recent-title" style="font-size:14px;font-weight:700;color:#1b3a5c;margin-bottom:12px;">Ore lavorate per Commessa</div>
+                    <div style="position:relative;" id="homeChartCommWrap">
+                        <canvas id="homeChartComm"></canvas>
+                    </div>
+                </div>
+                <div class="home-progress-wrap" style="flex:1;min-width:280px;margin-bottom:0;overflow:hidden;">
+                    <div id="homeTreemapTitle" class="home-recent-title" style="font-size:14px;font-weight:700;color:#1b3a5c;margin-bottom:12px;">Top Servizi per ore</div>
+                    <div id="homeTreemap" style="position:relative;height:120px;overflow:hidden;border-radius:6px;"></div>
+                </div>
+            </div>
+        </div>`;
+
+        // Salva rows per interattività
+        homeRows = data.rows;
+        homeSelectedComm = null;
+
+        // Grafico ore per commessa
+        const orePerComm = {};
+        for (const r of data.rows) {
+            const c = r.projectDescription || '?';
+            orePerComm[c] = (orePerComm[c] || 0) + parseOreDecimali(r.workedTime);
+        }
+        const commSorted    = Object.entries(orePerComm).sort((a,b) => b[1]-a[1]);
+        const commLabels    = commSorted.map(([k]) => k.length > 22 ? k.slice(0,20)+'…' : k);
+        const commFullNames = commSorted.map(([k]) => k);
+        const commValues    = commSorted.map(([,v]) => v);
+        const wrap = document.getElementById('homeChartCommWrap');
+        const ctx  = document.getElementById('homeChartComm');
+        if (wrap && ctx && commSorted.length > 0) {
+            wrap.style.height = Math.max(commSorted.length * 28, 120) + 'px';
+            if (homeChartInstance) { homeChartInstance.destroy(); homeChartInstance = null; }
+            homeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: commLabels, datasets: [{ data: commValues, backgroundColor: commValues.map(() => '#3B5BDB'), borderRadius: 3 }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    cursor: 'pointer',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: {
+                            title: i => commFullNames[i[0].dataIndex],
+                            label: c => c.raw.toFixed(2) + ' ore'
+                        }}
+                    },
+                    scales: {
+                        x: { grid: { color: '#eee' } },
+                        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                    },
+                    onClick(evt, elements) {
+                        if (!elements.length) return;
+                        const nome = commFullNames[elements[0].index];
+                        homeSelectedComm = homeSelectedComm === nome ? null : nome;
+                        updateHomeChartColors();
+                        refreshHomeTreemap();
+                    }
+                }
+            });
+            homeChartInstance._commNames = commFullNames;
+            ctx.style.cursor = 'pointer';
+        }
+
+        // Treemap servizi (primo caricamento)
+        refreshHomeTreemap();
+    } catch(e) {
+        container.innerHTML = `<div style="color:#c62828;padding:20px">Errore: ${e.message}</div>`;
+    }
+}
+
+// ========================================================
+// AUTO-LOAD: Carica currentUser, costi da link salvati, poi cruscotto
+// ========================================================
+let currentUser = { username: '', displayName: '', isAdmin: false, allowedOperators: null, canSeeCosts: false };
+
+// Il nome del cliente arriva dal server (appsettings.json → Cliente:Nome)
+function applicaNomeCliente() {
+    const nome = currentUser.cliente;
+    if (!nome) return;
+    document.title = nome;
+    const el = document.querySelector('.tymex-title');
+    if (el) el.textContent = nome.toUpperCase();
+}
+
+(async function() {
+    try {
+        const res = await fetch(`${API_BASE}/api/auth/me`);
+        if (res.ok) currentUser = await res.json();
+    } catch(e) {}
+    applicaNomeCliente();
+    initAdminButton();
+
+    // Mostra HOME solo per utenti non-admin (cruscotto visibile a tutti)
+    if (!currentUser.isAdmin) {
+        document.getElementById('btnHome').style.display = '';
+    }
+
+    // Carica costi orari operatori da BigQuery (per admin e utenti con canSeeCosts)
+    if (currentUser.isAdmin || currentUser.canSeeCosts) {
+        try {
+            const costsRes = await fetch(`${API_BASE}/api/operators/costs`);
+            if (costsRes.ok) operatorCostRates = await costsRes.json();
+        } catch(e) {}
+    }
+
+    if (currentUser.isAdmin) caricaCruscotto();
+    else caricaHome();
+})();
+</script>
+</body>
+</html>

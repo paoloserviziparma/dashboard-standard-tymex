@@ -1,0 +1,22 @@
+# Output di compilazione e file locali
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.tmp
+desktop.ini
+.claude/
+
+# Credenziali: NON committare (sul server arrivano da GOOGLE_CREDENTIALS_JSON / _B64)
+credentials.json.txt
+/*.json
+!/appsettings*.json
+Properties/launchSettings.json
+
+# Dati e documenti di lavoro
+*.csv
+*.xlsx
+*.pdf
+Notaspese/
+_backup_*/
