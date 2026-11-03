@@ -511,9 +511,9 @@
                     <option value="all">Tutti i mesi</option>
                 </select>
                 <label>DAL:</label>
-                <input type="date" id="dataDal">
+                <input type="date" id="dataDal" onchange="onDateRapportiniChange()">
                 <label>AL:</label>
-                <input type="date" id="dataAl">
+                <input type="date" id="dataAl" onchange="onDateRapportiniChange()">
                 <label>CLIENTE:</label>
                 <div id="rappClienteSlot"></div>
                 <label>COMMESSA:</label>
@@ -771,6 +771,7 @@ const TABLE_CONFIGS = {
 // ========================================================
 async function loadTable(tableName) {
     currentTable = tableName;
+    currentData = null;
     sortCol = null; sortDir = 0;
     gridDrillOpen.clear();
 
@@ -780,7 +781,7 @@ async function loadTable(tableName) {
     document.querySelector('.results-section').classList.remove('cruscotto-mode');
 
     // Carica mesi disponibili per il selettore rapportini
-    if (tableName === 'documents') loadRapportiniMesi();
+    loadRapportiniMesi();
     // La barra Esporta Rapportini è visibile su tutte le tabelle
     loadRapportiniClienti();
 
@@ -851,6 +852,25 @@ function renderTable(data, filterText) {
         );
     }
 
+    // Sulle griglie con drill-down i filtri della barra (periodo, cliente, commessa) tengono solo le righe con rapportini
+    const drill = GRID_DRILL[currentTable];
+    const filtri = drill ? filtriGrigliaAttivi() : null;
+    let docsGriglia = gridDrillDocs;
+    if (filtri) {
+        if (!gridDrillDocs) {
+            if (gridDrillErrore) {
+                container.innerHTML = `<div class="error">Errore: ${escapeHtml(gridDrillErrore)}</div>`;
+            } else {
+                container.innerHTML = '<div class="loading"><div class="spinner"></div>Applicazione filtri...</div>';
+                const tabella = currentTable;
+                assicuraGridDrillDocs().then(() => { if (currentTable === tabella) ridisegnaGriglia(); });
+            }
+            return;
+        }
+        docsGriglia = gridDrillDocs.filter(d => docNeiFiltri(d, filtri));
+        rows = rows.filter(row => docsGriglia.some(d => drill.match(row, d)));
+    }
+
     // Ordinamento
     if (sortCol && sortDir !== 0) {
         rows = [...rows].sort((a, b) => {
@@ -864,16 +884,19 @@ function renderTable(data, filterText) {
         });
     }
 
-    document.getElementById('resultsInfo').textContent =
-        filter ? `${rows.length} di ${data.totalRows} righe (filtrate)` : `${data.totalRows} righe`;
+    let info = filter || filtri ? `${rows.length} di ${data.totalRows} righe (filtrate)` : `${data.totalRows} righe`;
+    if (filtri) {
+        info += ` · con rapportini ${descrizioneFiltri(filtri)}`;
+        if (data.rows.length < data.totalRows) info += ` · cercate nelle prime ${data.rows.length}: aumenta "Righe" e clicca Ricarica per cercarle tutte`;
+    }
+    document.getElementById('resultsInfo').textContent = info;
 
     if (rows.length === 0) {
-        container.innerHTML = '<div class="empty-state">Nessun risultato per il filtro applicato</div>';
+        container.innerHTML = `<div class="empty-state">${filtri ? 'Nessuna riga con rapportini nei filtri scelti' : 'Nessun risultato per il filtro applicato'}</div>`;
         return;
     }
 
     const isProjects = currentTable === 'projects';
-    const drill = GRID_DRILL[currentTable];
     _gridDrillPaths = [];
 
     let html = '<div class="table-wrapper"><table><thead><tr>';
@@ -906,8 +929,8 @@ function renderTable(data, filterText) {
         }
         html += '</tr>';
         if (isOpen) {
-            const contenuto = gridDrillDocs
-                ? gridDrillLivello(drill, 0, gridDrillDocs.filter(d => drill.match(row, d)), path)
+            const contenuto = docsGriglia
+                ? gridDrillLivello(drill, 0, docsGriglia.filter(d => drill.match(row, d)), path)
                 : gridDrillErrore
                     ? `<div class="error">Errore: ${escapeHtml(gridDrillErrore)}</div>`
                     : '<div class="loading"><div class="spinner"></div>Caricamento rapportini...</div>';
@@ -1010,6 +1033,44 @@ const GRID_DRILL = {
 const fmtOreDrill = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtDataDrill = s => s ? String(s).slice(0, 10).split('-').reverse().join('/') : '';
 
+// Filtri della barra Esporta Rapportini applicati alle griglie; null se nessuno è impostato
+function filtriGrigliaAttivi() {
+    const dal = document.getElementById('dataDal').value;
+    const al = document.getElementById('dataAl').value;
+    const cliente = clienteFiltri.rapp.scelto, commessa = clienteFiltri.comm.scelto;
+    if (!dal && !al && !cliente && !commessa) return null;
+    return { dal, al, cliente, commessa };
+}
+
+function docNeiFiltri(d, f) {
+    const giorno = String(d.date || '').slice(0, 10);
+    return (!f.dal || giorno >= f.dal) && (!f.al || giorno <= f.al)
+        && rigaNeiFiltriRapportini(d.customerFiscalName, d.projectName, d.projectDescription);
+}
+
+function descrizioneFiltri(f) {
+    const parti = [];
+    if (f.dal && f.al) parti.push(`dal ${fmtDataDrill(f.dal)} al ${fmtDataDrill(f.al)}`);
+    else if (f.dal) parti.push(`dal ${fmtDataDrill(f.dal)}`);
+    else if (f.al) parti.push(`fino al ${fmtDataDrill(f.al)}`);
+    if (f.cliente) parti.push(`cliente ${f.cliente}`);
+    if (f.commessa) parti.push(`commessa ${f.commessa}`);
+    return parti.join(', ');
+}
+
+// Carica i rapportini una volta sola anche se più richieste arrivano insieme
+let _gridDrillCaricamento = null;
+function assicuraGridDrillDocs() {
+    if (gridDrillDocs) return Promise.resolve();
+    if (!_gridDrillCaricamento) {
+        gridDrillErrore = '';
+        _gridDrillCaricamento = caricaGridDrillDocs()
+            .catch(e => { gridDrillErrore = e.message; })
+            .finally(() => { _gridDrillCaricamento = null; });
+    }
+    return _gridDrillCaricamento;
+}
+
 async function caricaGridDrillDocs() {
     const opFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
         ? ` WHERE LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
@@ -1081,9 +1142,7 @@ async function toggleGridDrill(i) {
     hideServiceTooltip();
     ridisegnaGriglia();
     if (!gridDrillDocs) {
-        gridDrillErrore = '';
-        try { await caricaGridDrillDocs(); }
-        catch (e) { gridDrillErrore = e.message; }
+        await assicuraGridDrillDocs();
         if (currentTable === tabella) ridisegnaGriglia();
     }
 }
@@ -1105,6 +1164,7 @@ function filterRows() {
 
 function reloadCurrent() {
     gridDrillDocs = null;
+    gridDrillErrore = '';
     if (currentTable) loadTable(currentTable);
 }
 
@@ -1327,6 +1387,7 @@ function aggiornaCommesseRapportini() {
 // Riapplica i filtri alla vista aperta: griglia RAPPORTINI o anteprima VISUALIZZA
 function aggiornaVistaRapportini() {
     if (currentTable === 'documents') loadTable('documents');
+    else if (GRID_DRILL[currentTable]) ridisegnaGriglia();
     else if (currentTable === null && document.getElementById('dataDal').value && document.getElementById('dataAl').value) visualizzaRapportini();
 }
 
@@ -1390,15 +1451,16 @@ async function loadRapportiniMesi() {
 
 function onRapportiniMeseChange() {
     const val = document.getElementById('rapportiniMese').value;
-    if (val === 'all') {
-        document.getElementById('dataDal').value = '';
-        document.getElementById('dataAl').value = '';
-        return;
-    }
-    const range = meseKeyToRange(val);
+    const range = val === 'all' ? { dal: '', al: '' } : meseKeyToRange(val);
     document.getElementById('dataDal').value = range.dal;
     document.getElementById('dataAl').value = range.al;
-    visualizzaRapportini();
+    // Sulle griglie con drill-down il mese filtra la griglia; altrove apre l'anteprima rapportini
+    if (GRID_DRILL[currentTable]) ridisegnaGriglia();
+    else if (val !== 'all') visualizzaRapportini();
+}
+
+function onDateRapportiniChange() {
+    if (GRID_DRILL[currentTable]) ridisegnaGriglia();
 }
 
 function validaDateRapportini() {
