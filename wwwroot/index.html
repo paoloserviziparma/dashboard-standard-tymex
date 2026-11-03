@@ -320,6 +320,22 @@
         .op-drill-serv td:first-child { padding-left:46px; }
         .op-drill-serv:hover td { background:#e6f5e6; }
 
+        /* Drill-down nelle griglie CLIENTI / COMMESSE / SERVIZI */
+        tr.grid-drill { cursor: pointer; }
+        tr.grid-drill.grid-open > td { background: #eef4fb; font-weight: 600; }
+        tbody td.grid-drill-cell { max-width: none; white-space: normal; padding: 4px 12px 10px 34px; background: #fafcff; }
+        .grid-drill-box { border-left: 3px solid #3B5BDB; padding: 6px 0 6px 10px; }
+        .grid-drill-box.lv1 { border-left-color: #2e7d6a; }
+        .grid-drill-box.lv2 { border-left-color: #b34700; }
+        .grid-drill-box h4 { font-size: 12px; color: #1b3a5c; margin: 0 0 6px; font-weight: 600; }
+        .grid-drill-box table { width: auto; min-width: 520px; font-size: 12px; background: white; }
+        .grid-drill-box thead th { position: static; cursor: default; padding: 4px 10px; font-size: 11px; color: #666; background: #f5f7fa; }
+        .grid-drill-box tbody td { padding: 4px 10px; max-width: 420px; }
+        .grid-drill-box td.num, .grid-drill-box th.num { text-align: right; }
+        .grid-drill-box td.note { white-space: normal; min-width: 200px; }
+        .grid-drill-box tfoot td { font-weight: 700; padding: 4px 10px; border-top: 2px solid #dee2e6; }
+        .grid-drill-box .empty { color: #999; font-size: 12px; }
+
         /* Tooltip servizi attivi (COMMESSE) */
         #serviceTooltip {
             position: absolute; display: none; background: white; border: 1px solid #ccc;
@@ -351,6 +367,8 @@
         .cal-table td.cal-over  { background: #ffcdd2 !important; color: #b71c1c; font-weight: 600; }
         .cal-table td.cal-weekend { background: #f0f0f0; }
         .cal-table td.cal-total, .cal-table th.cal-total { background: #e3f2fd; font-weight: 700; border-left: 2px solid #90caf9; }
+        .cal-table [data-cal] { cursor: help; }
+        .cal-table td.cal-val[data-cal]:hover, .cal-table th[data-cal]:hover { outline: 2px solid #6a3d99; outline-offset: -2px; }
 
         /* === ADMIN PANEL === */
         .admin-container { padding: 4px 0; }
@@ -570,7 +588,7 @@ const TABLE_CONFIGS = {
     customers: {
         title: 'CLIENTI',
         load: async (limit) => {
-            const sql = `SELECT RagioneSociale, Cap, Localita, Provincia, CodStato, CodCliFor, PartitaIva FROM \`tymex-1a330.tymex_client.customers\` LIMIT ${limit}`;
+            const sql = `SELECT documentId, RagioneSociale, Cap, Localita, Provincia, CodStato, CodCliFor, PartitaIva FROM \`tymex-1a330.tymex_client.customers\` LIMIT ${limit}`;
             const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ sql })
@@ -587,7 +605,8 @@ const TABLE_CONFIGS = {
                     'Provincia': r.Provincia || '',
                     'Cod Stato': r.CodStato || '',
                     'CodCliFor': r.CodCliFor || '',
-                    'Partita IVA': r.PartitaIva || ''
+                    'Partita IVA': r.PartitaIva || '',
+                    _id: r.documentId || ''
                 }))
             };
         }
@@ -753,6 +772,7 @@ const TABLE_CONFIGS = {
 async function loadTable(tableName) {
     currentTable = tableName;
     sortCol = null; sortDir = 0;
+    gridDrillOpen.clear();
 
     // Ripristina sezioni nascoste dal cruscotto
     document.querySelector('.rapportini-section').style.display = '';
@@ -853,6 +873,8 @@ function renderTable(data, filterText) {
     }
 
     const isProjects = currentTable === 'projects';
+    const drill = GRID_DRILL[currentTable];
+    _gridDrillPaths = [];
 
     let html = '<div class="table-wrapper"><table><thead><tr>';
     html += '<th>#</th>';
@@ -866,16 +888,31 @@ function renderTable(data, filterText) {
     rows.forEach((row, idx) => {
         let trAttr = '';
         if (isProjects && row._activeServices) {
-            trAttr = ` data-services="${escapeAttr(row._activeServices)}" onmouseenter="showServiceTooltip(event, this)" onmouseleave="hideServiceTooltip()" style="cursor:help"`;
+            trAttr = ` data-services="${escapeAttr(row._activeServices)}" onmouseenter="showServiceTooltip(event, this)" onmouseleave="hideServiceTooltip()"`;
+        }
+        let path = null, isOpen = false;
+        if (drill) {
+            path = currentTable + ':' + drill.chiave(row);
+            isOpen = gridDrillOpen.has(path);
+            trAttr += ` class="grid-drill${isOpen ? ' grid-open' : ''}" onclick="toggleGridDrill(${_gridDrillPaths.push(path) - 1})"`;
         }
         html += `<tr${trAttr}>`;
-        html += `<td style="color:#aaa">${idx + 1}</td>`;
+        const freccia = drill ? `<span class="op-tree-arrow">${isOpen ? '▼' : '▶'}</span>` : '';
+        html += `<td style="color:#aaa">${freccia}${idx + 1}</td>`;
         for (const col of data.schema) {
             const val = row[col];
             const display = val === null || val === undefined || val === '' ? '<span style="color:#ccc">-</span>' : escapeHtml(String(val));
             html += `<td title="${escapeAttr(String(val ?? ''))}">${display}</td>`;
         }
         html += '</tr>';
+        if (isOpen) {
+            const contenuto = gridDrillDocs
+                ? gridDrillLivello(drill, 0, gridDrillDocs.filter(d => drill.match(row, d)), path)
+                : gridDrillErrore
+                    ? `<div class="error">Errore: ${escapeHtml(gridDrillErrore)}</div>`
+                    : '<div class="loading"><div class="spinner"></div>Caricamento rapportini...</div>';
+            html += `<tr><td class="grid-drill-cell" colspan="${data.schema.length + 1}">${contenuto}</td></tr>`;
+        }
     });
 
     const totali = rows[0]._ore !== undefined ? renderTotaliRapportini(rows, data) : { piede: '', note: '' };
@@ -914,12 +951,160 @@ function renderTotaliRapportini(rows, data) {
     return { piede, note };
 }
 
+// ========================================================
+// DRILL-DOWN GRIGLIE: cliente → commesse → servizi → rapportini
+// ========================================================
+const gridDrillOpen = new Set();  // percorsi aperti: "tabella:chiave\n0:commessa\n1:servizio"
+let _gridDrillPaths = [];         // percorsi indicizzati per gli onclick della griglia disegnata
+let gridDrillDocs = null;         // rapportini caricati al primo click, poi riusati
+let gridDrillErrore = '';
+
+function stessoTesto(a, b) {
+    const x = nomeCliente(a).toLowerCase();
+    return x !== '' && x === nomeCliente(b).toLowerCase();
+}
+
+const DRILL_LIVELLI = {
+    commessa: { titolo: 'Commesse', colonna: 'Commessa',
+        chiave: d => d.projectName || d.projectDescription || '',
+        etichetta: d => etichettaCommessa(d.projectName, d.projectDescription) || '(Senza commessa)' },
+    servizio: { titolo: 'Servizi', colonna: 'Servizio',
+        chiave: d => d.serviceName || d.serviceDescription || '',
+        etichetta: d => etichettaCommessa(d.serviceName, d.serviceDescription) || '(Senza servizio)' }
+};
+
+// Per ogni griglia: come riconoscere i rapportini di una riga e quali livelli attraversare prima del dettaglio
+const GRID_DRILL = {
+    customers: {
+        livelli: ['commessa', 'servizio'],
+        chiave: r => r._id || r['Ragione Sociale'],
+        match: (r, d) => (!!r._id && d.customerName === r._id)
+                      || (!!r['CodCliFor'] && d.customerName === r['CodCliFor'])
+                      || stessoTesto(d.customerFiscalName, r['Ragione Sociale'])
+    },
+    operators: {
+        livelli: ['commessa', 'servizio'],
+        chiave: r => r['Email'] || (r['Nome'] + ' ' + r['Cognome']),
+        // operatorDisplayName è "Nome Cognome"; se il cognome contiene il ruolo (es. "Loffi ASSIST") vale solo la prima parola
+        match: (r, d) => {
+            const cognomeBase = nomeCliente(r['Cognome']).split(' ')[0];
+            return stessoTesto(d.operatorDisplayName, r['Nome'] + ' ' + cognomeBase)
+                || stessoTesto(d.operatorDisplayName, r['Nome'] + ' ' + r['Cognome'])
+                || stessoTesto(d.operatorDisplayName, r['Cognome'] + ' ' + r['Nome']);
+        }
+    },
+    projects: {
+        livelli: ['servizio'],
+        chiave: r => r['Codice Commessa'] || r['Descrizione'],
+        match: (r, d) => (!!r['Codice Commessa'] && d.projectName === r['Codice Commessa'])
+                      || stessoTesto(d.projectDescription, r['Descrizione'])
+    },
+    services: {
+        livelli: ['commessa'],
+        chiave: r => r['Codice'] || r['Descrizione'],
+        match: (r, d) => (!!r['Codice'] && d.serviceName === r['Codice'])
+                      || stessoTesto(d.serviceDescription, r['Descrizione'])
+    }
+};
+
+const fmtOreDrill = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtDataDrill = s => s ? String(s).slice(0, 10).split('-').reverse().join('/') : '';
+
+async function caricaGridDrillDocs() {
+    const opFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
+        ? ` WHERE LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
+        : '';
+    const sql = `SELECT customerName, customerFiscalName, projectName, projectDescription, serviceName, serviceDescription, operatorDisplayName, date, workedTime, notes FROM \`tymex-1a330.tymex_client.documents\`${opFilter}`;
+    const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql })
+    });
+    if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
+    const raw = await resp.json();
+    raw.rows.forEach(d => { d._ore = parseOreDecimali(d.workedTime); });
+    gridDrillDocs = raw.rows;
+}
+
+// Un livello del drill-down: righe raggruppate (commesse o servizi) oppure, in fondo, il dettaglio rapportini
+function gridDrillLivello(drill, lv, docs, path) {
+    if (docs.length === 0) return '<div class="grid-drill-box"><span class="empty">Nessun rapportino registrato</span></div>';
+    if (lv >= drill.livelli.length) return gridDrillRapportini(docs, lv);
+
+    const L = DRILL_LIVELLI[drill.livelli[lv]];
+    const gruppi = new Map();
+    for (const d of docs) {
+        const k = L.chiave(d);
+        if (!gruppi.has(k)) gruppi.set(k, { etichetta: L.etichetta(d), docs: [], ore: 0, ultima: '' });
+        const g = gruppi.get(k);
+        g.docs.push(d);
+        g.ore += d._ore;
+        if ((d.date || '') > g.ultima) g.ultima = d.date || '';
+    }
+    const totOre = docs.reduce((s, d) => s + d._ore, 0);
+
+    let html = `<div class="grid-drill-box lv${lv}"><h4>${L.titolo} (${gruppi.size})</h4><table><thead><tr>
+        <th>${L.colonna}</th><th class="num">Ore</th><th class="num">Rapportini</th><th>Ultimo</th></tr></thead><tbody>`;
+    for (const [k, g] of [...gruppi].sort((a, b) => b[1].ore - a[1].ore)) {
+        const sub = path + '\n' + lv + ':' + k;
+        const isOpen = gridDrillOpen.has(sub);
+        html += `<tr class="grid-drill${isOpen ? ' grid-open' : ''}" onclick="event.stopPropagation();toggleGridDrill(${_gridDrillPaths.push(sub) - 1})">
+            <td><span class="op-tree-arrow">${isOpen ? '▼' : '▶'}</span>${escapeHtml(g.etichetta)}</td>
+            <td class="num">${fmtOreDrill(g.ore)}</td><td class="num">${g.docs.length}</td><td>${fmtDataDrill(g.ultima)}</td></tr>`;
+        if (isOpen) html += `<tr><td class="grid-drill-cell" colspan="4">${gridDrillLivello(drill, lv + 1, g.docs, sub)}</td></tr>`;
+    }
+    html += `</tbody><tfoot><tr><td>Totale</td><td class="num">${fmtOreDrill(totOre)}</td><td class="num">${docs.length}</td><td></td></tr></tfoot></table></div>`;
+    return html;
+}
+
+function gridDrillRapportini(docs, lv) {
+    const ordinati = [...docs].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    const totOre = docs.reduce((s, d) => s + d._ore, 0);
+    let html = `<div class="grid-drill-box lv${lv}"><h4>Rapportini (${docs.length})</h4><table><thead><tr>
+        <th>Data</th><th>Operatore</th><th class="num">Ore</th><th>Note</th></tr></thead><tbody>`;
+    for (const d of ordinati) {
+        html += `<tr><td>${fmtDataDrill(d.date)}</td><td>${escapeHtml(d.operatorDisplayName || '')}</td>
+            <td class="num">${fmtOreDrill(d._ore)}</td><td class="note">${escapeHtml(d.notes || '')}</td></tr>`;
+    }
+    html += `</tbody><tfoot><tr><td>Totale</td><td></td><td class="num">${fmtOreDrill(totOre)}</td><td></td></tr></tfoot></table></div>`;
+    return html;
+}
+
+async function toggleGridDrill(i) {
+    const path = _gridDrillPaths[i];
+    const tabella = currentTable;
+    if (gridDrillOpen.has(path)) {
+        // Chiudendo un livello si chiudono anche quelli sotto
+        for (const p of [...gridDrillOpen]) if (p === path || p.startsWith(path + '\n')) gridDrillOpen.delete(p);
+    } else {
+        gridDrillOpen.add(path);
+    }
+    hideServiceTooltip();
+    ridisegnaGriglia();
+    if (!gridDrillDocs) {
+        gridDrillErrore = '';
+        try { await caricaGridDrillDocs(); }
+        catch (e) { gridDrillErrore = e.message; }
+        if (currentTable === tabella) ridisegnaGriglia();
+    }
+}
+
+// Ridisegna la griglia mantenendo la posizione di scorrimento
+function ridisegnaGriglia() {
+    if (!currentData) return;
+    const prima = document.querySelector('#resultsContainer .table-wrapper');
+    const top = prima ? prima.scrollTop : 0, left = prima ? prima.scrollLeft : 0;
+    renderTable(currentData, document.getElementById('searchBox').value);
+    const dopo = document.querySelector('#resultsContainer .table-wrapper');
+    if (dopo) { dopo.scrollTop = top; dopo.scrollLeft = left; }
+}
+
 function filterRows() {
     if (!currentData) return;
     renderTable(currentData, document.getElementById('searchBox').value);
 }
 
 function reloadCurrent() {
+    gridDrillDocs = null;
     if (currentTable) loadTable(currentTable);
 }
 
@@ -1022,7 +1207,7 @@ function moveAltroTooltip(event) {
 
 function hideServiceTooltip() {
     const tooltip = document.getElementById('serviceTooltip');
-    if (tooltip) tooltip.style.display = 'none';
+    if (tooltip) { tooltip.style.display = 'none'; tooltip.style.maxWidth = ''; }
 }
 
 // ========================================================
@@ -1937,6 +2122,8 @@ function aggiornaCruscottoCharts() {
 
 let calAnno = new Date().getFullYear();
 let calMese = new Date().getMonth() + 1; // 1-12
+let calRapportini = {}; // giorno → rapportini del mese visualizzato
+let calOperatori = [];  // operatori nell'ordine delle righe del calendario
 
 async function caricaCalendario() {
     document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
@@ -2017,7 +2204,7 @@ async function aggiornaCalendario() {
         const calOpFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
             ? ` AND LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
             : '';
-        const sql = `SELECT operatorDisplayName, date, workedTime FROM \`tymex-1a330.tymex_client.documents\` WHERE date BETWEEN '${dal}' AND '${al}'${calOpFilter} ORDER BY operatorDisplayName, date`;
+        const sql = `SELECT operatorDisplayName, date, workedTime, customerFiscalName, projectName, projectDescription, serviceName, serviceDescription, notes FROM \`tymex-1a330.tymex_client.documents\` WHERE date BETWEEN '${dal}' AND '${al}'${calOpFilter} ORDER BY operatorDisplayName, date`;
         const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sql })
@@ -2035,12 +2222,14 @@ async function aggiornaCalendario() {
 
         // Raggruppa ore per operatore e giorno
         const oreMap = {};
+        calRapportini = {};
         for (const r of data.rows) {
             const op = r.operatorDisplayName || '?';
             const giorno = parseInt((r.date || '').slice(8, 10));
             const ore = parseOreDecimali(r.workedTime);
             if (!oreMap[op]) oreMap[op] = {};
             oreMap[op][giorno] = (oreMap[op][giorno] || 0) + ore;
+            (calRapportini[giorno] = calRapportini[giorno] || []).push({ ...r, _ore: ore });
         }
 
         // Filtra operatori visibili secondo i permessi utente
@@ -2050,6 +2239,7 @@ async function aggiornaCalendario() {
         const operatori = Object.keys(oreMap)
             .filter(op => !allowed || allowed.has(op))
             .sort();
+        calOperatori = operatori;
         if (operatori.length === 0) {
             tableContainer.innerHTML = '<p style="color:#888;text-align:center;padding:30px;">Nessun dato per questo mese.</p>';
             return;
@@ -2078,12 +2268,16 @@ async function aggiornaCalendario() {
         let html = legend + '<div class="cal-table-wrap"><table class="cal-table">';
         const GG_IT = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
         html += '<thead><tr><th class="cal-op-header">Operatore</th>';
-        for (const { d, dt } of giorni)
-            html += `<th style="line-height:1.2;">${d}<br><span style="font-weight:400;font-size:10px;opacity:0.75;">${GG_IT[dt.getDay()]}</span></th>`;
+        // Al passaggio del mouse su un giorno: popup con i rapportini (di quell'operatore, o di tutti su intestazione e totali)
+        const calHover = (opIdx, d) => ` data-cal onmouseenter="showCalTooltip(event,${opIdx},${d})" onmousemove="moveAltroTooltip(event)" onmouseleave="hideServiceTooltip()"`;
+        for (const { d, dt } of giorni) {
+            const hover = calRapportini[d] ? calHover(-1, d) : '';
+            html += `<th style="line-height:1.2;"${hover}>${d}<br><span style="font-weight:400;font-size:10px;opacity:0.75;">${GG_IT[dt.getDay()]}</span></th>`;
+        }
         html += '<th class="cal-total">Tot</th></tr></thead><tbody>';
 
         const totaliGiorno = {};
-        for (const op of operatori) {
+        operatori.forEach((op, opIdx) => {
             html += `<tr><td class="cal-op">${escapeHtml(op)}</td>`;
             let totOp = 0;
             for (const { d, dt } of giorni) {
@@ -2092,13 +2286,12 @@ async function aggiornaCalendario() {
                 totaliGiorno[d] = (totaliGiorno[d] || 0) + ore;
                 const attese = getOreAttese(op, dt);
                 const cls = calClass(ore, attese);
-                const title = attese !== null ? ` title="Previste: ${attese}h"` : '';
                 html += ore > 0
-                    ? `<td class="cal-val ${cls}"${title}>${fmtOre(ore)}</td>`
+                    ? `<td class="cal-val ${cls}"${calHover(opIdx, d)}>${fmtOre(ore)}</td>`
                     : `<td class="cal-val"></td>`;
             }
             html += `<td class="cal-total">${fmtOre(totOp)}</td></tr>`;
-        }
+        });
 
         // Riga totali
         html += '<tr style="border-top:2px solid #1b3a5c;"><td class="cal-op" style="font-weight:700;">TOTALE</td>';
@@ -2107,7 +2300,7 @@ async function aggiornaCalendario() {
             const t = totaliGiorno[d] || 0;
             grandTotal += t;
             html += t > 0
-                ? `<td class="cal-val has-data" style="font-weight:700;">${fmtOre(t)}</td>`
+                ? `<td class="cal-val has-data" style="font-weight:700;"${calHover(-1, d)}>${fmtOre(t)}</td>`
                 : '<td class="cal-val"></td>';
         }
         html += `<td class="cal-total">${fmtOre(grandTotal)}</td></tr>`;
@@ -2117,6 +2310,41 @@ async function aggiornaCalendario() {
     } catch (e) {
         tableContainer.innerHTML = `<div class="error">Errore: ${escapeHtml(e.message)}</div>`;
     }
+}
+
+// Popup rapportini di un giorno: opIdx = riga operatore, -1 = tutti gli operatori
+function showCalTooltip(event, opIdx, giorno) {
+    const op = opIdx >= 0 ? calOperatori[opIdx] : null;
+    const allowed = currentUser.allowedOperators && currentUser.allowedOperators.length > 0
+        ? new Set(currentUser.allowedOperators) : null;
+    const righe = (calRapportini[giorno] || [])
+        .filter(r => op ? (r.operatorDisplayName || '?') === op : (!allowed || allowed.has(r.operatorDisplayName)));
+    if (righe.length === 0) return;
+
+    const dt = new Date(calAnno, calMese - 1, giorno);
+    const dataTxt = dt.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const tot = righe.reduce((s, r) => s + r._ore, 0);
+    const attese = op ? getOreAttese(op, dt) : null;
+    let html = `<h4>${escapeHtml(dataTxt)}${op ? ' — ' + escapeHtml(op) : ''}</h4>`
+             + `<div style="font-size:11px;color:#666;margin-bottom:6px;">${righe.length} rapportini · ${fmtOreDrill(tot)} h${attese !== null ? ` · previste ${fmtOreDrill(attese)} h` : ''}</div>`
+             + `<table><thead><tr>${op ? '' : '<th>Operatore</th>'}<th>Cliente</th><th>Commessa</th><th>Servizio</th><th style="text-align:right">Ore</th><th>Note</th></tr></thead><tbody>`;
+    for (const r of righe) {
+        html += `<tr>${op ? '' : `<td>${escapeHtml(r.operatorDisplayName || '')}</td>`}
+            <td>${escapeHtml(r.customerFiscalName || '')}</td>
+            <td>${escapeHtml(etichettaCommessa(r.projectName, r.projectDescription))}</td>
+            <td>${escapeHtml(r.serviceDescription || r.serviceName || '')}</td>
+            <td style="text-align:right;white-space:nowrap">${fmtOreDrill(r._ore)}</td>
+            <td style="min-width:140px">${escapeHtml(r.notes || '')}</td></tr>`;
+    }
+    html += '</tbody></table>';
+
+    const tooltip = document.getElementById('serviceTooltip');
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    tooltip.style.maxWidth = '760px';
+    tooltip.style.maxHeight = '420px';
+    tooltip.style.overflowY = 'auto';
+    moveAltroTooltip(event);
 }
 
 // ========================================================
