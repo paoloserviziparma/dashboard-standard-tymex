@@ -625,9 +625,16 @@ const TABLE_CONFIGS = {
             if (!resp.ok) throw new Error((await resp.json()).detail || resp.statusText);
             const raw = await resp.json();
 
-            const filtrato = clienteFiltri.rapp.scelto || clienteFiltri.comm.scelto;
+            // Periodo (data del lavoro), cliente e commessa della barra filtri restringono la griglia
+            const dal = document.getElementById('dataDal').value;
+            const al = document.getElementById('dataAl').value;
+            const filtrato = dal || al || clienteFiltri.rapp.scelto || clienteFiltri.comm.scelto;
             const rawRows = filtrato
-                ? raw.rows.filter(r => rigaNeiFiltriRapportini(r.customerFiscalName, r.projectName, r.projectDescription))
+                ? raw.rows.filter(r => {
+                    const giorno = String(r.date || '').slice(0, 10);
+                    return (!dal || giorno >= dal) && (!al || giorno <= al)
+                        && rigaNeiFiltriRapportini(r.customerFiscalName, r.projectName, r.projectDescription);
+                })
                 : raw.rows;
 
             // Trasforma le righe (mostra solo le prime N)
@@ -1454,13 +1461,15 @@ function onRapportiniMeseChange() {
     const range = val === 'all' ? { dal: '', al: '' } : meseKeyToRange(val);
     document.getElementById('dataDal').value = range.dal;
     document.getElementById('dataAl').value = range.al;
-    // Sulle griglie con drill-down il mese filtra la griglia; altrove apre l'anteprima rapportini
-    if (GRID_DRILL[currentTable]) ridisegnaGriglia();
+    // Sulle griglie il mese filtra la griglia aperta; altrove apre l'anteprima rapportini
+    if (currentTable === 'documents') loadTable('documents');
+    else if (GRID_DRILL[currentTable]) ridisegnaGriglia();
     else if (val !== 'all') visualizzaRapportini();
 }
 
 function onDateRapportiniChange() {
-    if (GRID_DRILL[currentTable]) ridisegnaGriglia();
+    if (currentTable === 'documents') loadTable('documents');
+    else if (GRID_DRILL[currentTable]) ridisegnaGriglia();
 }
 
 function validaDateRapportini() {
