@@ -918,7 +918,7 @@ function renderTable(data, filterText) {
     rows.forEach((row, idx) => {
         let trAttr = '';
         if (isProjects && row._activeServices) {
-            trAttr = ` data-services="${escapeAttr(row._activeServices)}" onmouseenter="showServiceTooltip(event, this)" onmouseleave="hideServiceTooltip()"`;
+            trAttr = ` data-services="${escapeAttr(row._activeServices)}" onmouseenter="apriPopup(event, e => showServiceTooltip(e, this))" onmouseleave="popupLasciato()"`;
         }
         let path = null, isOpen = false;
         if (drill) {
@@ -1223,8 +1223,7 @@ function showServiceTooltip(event, tr) {
         const tooltip = document.getElementById('serviceTooltip');
         tooltip.innerHTML = '<h4>Servizi attivi</h4><p style="color:#aaa;font-size:12px">Nessun servizio attivo</p>';
         tooltip.style.display = 'block';
-        tooltip.style.top = (event.clientY + window.scrollY + 10) + 'px';
-        tooltip.style.left = (event.clientX + 10) + 'px';
+        moveAltroTooltip(event);
         return;
     }
 
@@ -1237,8 +1236,9 @@ function showServiceTooltip(event, tr) {
     const tooltip = document.getElementById('serviceTooltip');
     tooltip.innerHTML = html;
     tooltip.style.display = 'block';
-    tooltip.style.top = (event.clientY + window.scrollY + 10) + 'px';
-    tooltip.style.left = Math.min(event.clientX + 10, window.innerWidth - 440) + 'px';
+    tooltip.style.maxHeight = '360px';
+    tooltip.style.overflowY = 'auto';
+    moveAltroTooltip(event);
 }
 
 // Popup dettaglio del blocco "Altro" nel treemap servizi
@@ -1273,9 +1273,48 @@ function moveAltroTooltip(event) {
 }
 
 function hideServiceTooltip() {
+    clearTimeout(_popupChiudiTimer); clearTimeout(_popupApriTimer);
+    _dashPopupVoce = null;
     const tooltip = document.getElementById('serviceTooltip');
     if (tooltip) { tooltip.style.display = 'none'; tooltip.style.maxWidth = ''; }
 }
+
+// Comportamento comune dei popup: restano fermi dove si aprono e non si chiudono subito,
+// così si può portarci sopra il mouse e scorrerli. Passando su un'altra voce mentre un popup
+// è aperto, il cambio avviene dopo una breve pausa (attraversare altre voci per raggiungere il popup non lo sostituisce).
+let _popupChiudiTimer = null, _popupApriTimer = null;
+let _dashPopupVoce = null; // voce del grafico cruscotto il cui popup è aperto
+const POPUP_RITARDO_CHIUSURA = 1500, POPUP_RITARDO_CAMBIO = 200;
+// Vero finché il mouse è sopra il popup: in quel caso niente lo chiude o lo sostituisce
+function mouseSulPopup() {
+    const t = document.getElementById('serviceTooltip');
+    return !!t && t.style.display === 'block' && t.matches(':hover');
+}
+function popupVisibile() {
+    const t = document.getElementById('serviceTooltip');
+    return !!t && t.style.display === 'block';
+}
+function apriPopup(event, mostra) {
+    if (mouseSulPopup()) return;
+    clearTimeout(_popupChiudiTimer); clearTimeout(_popupApriTimer);
+    const pos = { clientX: event.clientX, clientY: event.clientY };
+    if (popupVisibile()) _popupApriTimer = setTimeout(() => { if (!mouseSulPopup()) mostra(pos); }, POPUP_RITARDO_CAMBIO);
+    else mostra(pos);
+}
+function popupLasciato() {
+    clearTimeout(_popupApriTimer); clearTimeout(_popupChiudiTimer);
+    if (popupVisibile() && !mouseSulPopup()) _popupChiudiTimer = setTimeout(chiudiPopupSeLasciato, POPUP_RITARDO_CHIUSURA);
+}
+function chiudiPopupSeLasciato() {
+    if (mouseSulPopup()) return;
+    hideServiceTooltip();
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const tt = document.getElementById('serviceTooltip');
+    if (!tt) return;
+    tt.addEventListener('mouseenter', () => { clearTimeout(_popupChiudiTimer); clearTimeout(_popupApriTimer); });
+    tt.addEventListener('mouseleave', popupLasciato);
+});
 
 // ========================================================
 // FILTRI CLIENTE E COMMESSA — tendina con ricerca (cruscotto e rapportini)
@@ -1760,7 +1799,7 @@ async function caricaCruscotto() {
         const opFilter = (currentUser.allowedOperators && currentUser.allowedOperators.length > 0)
             ? ` WHERE LOWER(operatorDisplayName) IN (${currentUser.allowedOperators.map(o => `'${o.toLowerCase().replace(/'/g, "\\'")}'`).join(',')})`
             : '';
-        const sql = `SELECT documentId, date, projectName, projectDescription, customerFiscalName, customerName, serviceName, serviceDescription, operatorDisplayName, workedTime, customFields, creation_date FROM \`tymex-1a330.tymex_client.documents\`${opFilter} ORDER BY date`;
+        const sql = `SELECT documentId, date, projectName, projectDescription, customerFiscalName, customerName, serviceName, serviceDescription, operatorDisplayName, workedTime, customFields, creation_date, notes FROM \`tymex-1a330.tymex_client.documents\`${opFilter} ORDER BY date`;
         const resp = await fetch(`${API_BASE}/api/bigquery/query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1857,7 +1896,7 @@ function renderCruscotto(container) {
             <div id="dashOpDrill"></div>
         </div>
         <div class="card">
-            <h3>Top Servizi per ore</h3>
+            <h3>Servizi</h3>
             <div id="dashTreemap"></div>
         </div>
         <div class="card card-chart">
@@ -2092,14 +2131,16 @@ window.addEventListener('resize', () => {
 });
 
 // Grafico a barre orizzontali delle ore per una dimensione del cross-filter (clic = seleziona)
-function disegnaBarreOre(dim, canvasId, wrapId, getEtichetta) {
+function disegnaBarreOre(dim, canvasId, wrapId, getEtichetta, opz = {}) {
+    const mostra = opz.mostra || (k => k);
+    const maxLen = opz.maxLen || 22;
     const orePerVoce = {};
     for (const r of getDashRowsFor(dim)) {
         const k = getEtichetta(r);
         orePerVoce[k] = (orePerVoce[k] || 0) + parseOreDecimali(r.workedTime);
     }
     const sorted = Object.entries(orePerVoce).sort((a, b) => b[1] - a[1]);
-    const labels = sorted.map(([k]) => k.length > 22 ? k.slice(0, 20) + '…' : k);
+    const labels = sorted.map(([k]) => { const t = mostra(k); return t.length > maxLen ? t.slice(0, maxLen - 2) + '…' : t; });
     const values = sorted.map(([, v]) => Math.round(v * 100) / 100);
     const fullNames = sorted.map(([k]) => k);
     const sel = dashSelection[dim];
@@ -2123,8 +2164,8 @@ function disegnaBarreOre(dim, canvasId, wrapId, getEtichetta) {
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: {
-                        title: idx => fullNames[idx[0].dataIndex],
+                    tooltip: { enabled: !opz.popupRapportini, callbacks: {
+                        title: idx => mostra(fullNames[idx[0].dataIndex]),
                         label: c => c.raw.toFixed(2) + ' ore'
                     }}
                 },
@@ -2132,13 +2173,48 @@ function disegnaBarreOre(dim, canvasId, wrapId, getEtichetta) {
                     x: { grid: { color: '#eee' } },
                     y: { grid: { display: false }, ticks: { font: { size: 11 } } }
                 },
+                onHover: opz.popupRapportini ? (evt, elems) => {
+                    if (elems.length === 0) { popupLasciato(); return; }
+                    const k = fullNames[elems[0].index];
+                    if (_dashPopupVoce === k) { clearTimeout(_popupChiudiTimer); clearTimeout(_popupApriTimer); return; }
+                    apriPopup(evt.native, e => { opz.popupRapportini(e, k); _dashPopupVoce = k; });
+                } : undefined,
                 onClick: (evt, elems) => {
                     // Differito: la selezione ridisegna il grafico, che non va distrutto durante il proprio evento
                     if (elems.length > 0) setTimeout(() => toggleSelection(dim, fullNames[elems[0].index]));
                 }
             }
         });
+        if (opz.popupRapportini) ctx.onmouseleave = popupLasciato;
     }
+}
+
+// Popup sulle barre del cruscotto: rapportini della voce sotto il mouse (con i filtri attivi)
+const DASH_POPUP_MAX = 150;
+function mostraPopupRapportiniCliente(event, cliente) {
+    const righe = getDashRowsFor('cliente').filter(r => clienteRiga(r) === cliente)
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    if (righe.length === 0) { hideServiceTooltip(); return; }
+    const tot = righe.reduce((s, r) => s + parseOreDecimali(r.workedTime), 0);
+    let html = `<h4>${escapeHtml(cliente)}</h4>`
+             + `<div style="font-size:11px;color:#666;margin-bottom:6px;">${righe.length} rapportini · ${fmtOreDrill(tot)} h${righe.length > DASH_POPUP_MAX ? ` · i più recenti ${DASH_POPUP_MAX}` : ''}</div>`
+             + '<table><thead><tr><th>Data</th><th>Operatore</th><th>Commessa</th><th>Servizio</th><th style="text-align:right">Ore</th><th>Note</th></tr></thead><tbody>';
+    for (const r of righe.slice(0, DASH_POPUP_MAX)) {
+        html += `<tr><td style="white-space:nowrap">${fmtDataDrill(r.date)}</td>
+            <td>${escapeHtml(r.operatorDisplayName || '')}</td>
+            <td>${escapeHtml(etichettaCommessa(r.projectName, r.projectDescription))}</td>
+            <td>${escapeHtml(r.serviceDescription || r.serviceName || '')}</td>
+            <td style="text-align:right;white-space:nowrap">${fmtOreDrill(parseOreDecimali(r.workedTime))}</td>
+            <td style="min-width:140px">${escapeHtml(r.notes || '')}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    const tooltip = document.getElementById('serviceTooltip');
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    tooltip.style.maxWidth = '760px';
+    tooltip.style.maxHeight = '420px';
+    tooltip.style.overflowY = 'auto';
+    moveAltroTooltip(event);
 }
 
 function aggiornaCruscottoCharts() {
@@ -2162,8 +2238,12 @@ function aggiornaCruscottoCharts() {
         elValore.textContent = '€' + Math.round(totValore).toLocaleString('it-IT');
 
     // ---- 1) Bar chart commesse e clienti: ciascuno senza il proprio filtro ----
-    disegnaBarreOre('commessa', 'chartCommesse', 'chartCommesseWrap', r => r.projectDescription || '?');
-    disegnaBarreOre('cliente', 'chartClienti', 'chartClientiWrap', clienteRiga);
+    const codiceCommessa = {};
+    for (const r of dashData.rows) if (r.projectDescription && r.projectName && !codiceCommessa[r.projectDescription]) codiceCommessa[r.projectDescription] = r.projectName;
+    disegnaBarreOre('commessa', 'chartCommesse', 'chartCommesseWrap', r => r.projectDescription || '?',
+        { mostra: d => codiceCommessa[d] ? `${codiceCommessa[d]} - ${d}` : d, maxLen: 32 });
+    _dashPopupVoce = null; // il grafico viene ridisegnato: al prossimo passaggio il popup si aggiorna
+    disegnaBarreOre('cliente', 'chartClienti', 'chartClientiWrap', clienteRiga, { popupRapportini: mostraPopupRapportiniCliente });
 
     // ---- 2) Donut fatturare: usa righe senza filtro fatturare ----
     // ---- 2) Treemap servizi: usa righe senza filtro servizio ----
@@ -2340,7 +2420,7 @@ async function aggiornaCalendario() {
         const GG_IT = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
         html += '<thead><tr><th class="cal-op-header">Operatore</th>';
         // Al passaggio del mouse su un giorno: popup con i rapportini (di quell'operatore, o di tutti su intestazione e totali)
-        const calHover = (opIdx, d) => ` data-cal onmouseenter="showCalTooltip(event,${opIdx},${d})" onmousemove="moveAltroTooltip(event)" onmouseleave="hideServiceTooltip()"`;
+        const calHover = (opIdx, d) => ` data-cal onmouseenter="apriPopup(event, e => showCalTooltip(e,${opIdx},${d}))" onmouseleave="popupLasciato()"`;
         for (const { d, dt } of giorni) {
             const hover = calRapportini[d] ? calHover(-1, d) : '';
             html += `<th style="line-height:1.2;"${hover}>${d}<br><span style="font-weight:400;font-size:10px;opacity:0.75;">${GG_IT[dt.getDay()]}</span></th>`;
@@ -2874,7 +2954,7 @@ function buildTreemapHTML(items, totOre, onclickFn) {
         const oc = onclickFn ? ` onclick="${onclickFn(nome)}"` : '';
         // Il blocco "Altro" mostra al passaggio del mouse il dettaglio dei servizi raggruppati
         const tip = dettaglio
-            ? ` data-altro="${escapeAttr(JSON.stringify(dettaglio))}" onmouseenter="showAltroTooltip(event, this)" onmousemove="moveAltroTooltip(event)" onmouseleave="hideServiceTooltip()"`
+            ? ` data-altro="${escapeAttr(JSON.stringify(dettaglio))}" onmouseenter="apriPopup(event, e => showAltroTooltip(e, this))" onmouseleave="popupLasciato()"`
             : ` title="${escapeAttr(nome)}: ${ore.toFixed(2)}h (${rawPct.toFixed(1)}%)"`;
         return `<div data-tm-pct="${widthPct.toFixed(3)}" style="position:absolute;left:${left.toFixed(3)}%;width:${widthPct.toFixed(3)}%;height:100%;background:${bg};border-radius:4px;overflow:hidden;box-sizing:border-box;cursor:${onclickFn?'pointer':'default'};"${oc}${tip}>
             <span class="tm-label-name" style="position:absolute;top:7px;left:6px;right:4px;color:white;font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(nome)}</span>
