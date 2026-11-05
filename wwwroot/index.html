@@ -106,6 +106,9 @@
             overflow-x: scroll; overflow-y: auto;
             max-height: 70vh;
         }
+        /* Barra di scorrimento orizzontale in cima alla griglia, sincronizzata con quella in fondo */
+        .scroll-top { overflow-x: auto; overflow-y: hidden; height: 16px; margin-bottom: 2px; }
+        .scroll-top > div { height: 1px; }
 
         table {
             width: 100%; border-collapse: collapse; font-size: 13px;
@@ -658,6 +661,7 @@ const TABLE_CONFIGS = {
                 } else { oreD = wt; }
 
                 return {
+                    'Data Registrazione': dataReg,
                     'Operatore': r.operatorDisplayName || '',
                     'Cliente': r.customerFiscalName || '',
                     'COMMESSA': r.projectDescription || '',
@@ -666,7 +670,6 @@ const TABLE_CONFIGS = {
                     'Codice Servizio': r.serviceName || '',
                     'Ore Lavorate': oreD,
                     'Costo Orario': costoOr,
-                    'Data Registrazione': dataReg,
                     'Note': r.notes || '',
                     _ore: parseOreDecimali(wt),
                     _importo: rate > 0 ? rate * parseOreDecimali(wt) : null
@@ -674,7 +677,7 @@ const TABLE_CONFIGS = {
             });
 
             return {
-                schema: ['Operatore', 'Cliente', 'COMMESSA', 'Codice Commessa', 'Servizio', 'Codice Servizio', 'Ore Lavorate', 'Costo Orario', 'Data Registrazione', 'Note'],
+                schema: ['Data Registrazione', 'Operatore', 'Cliente', 'COMMESSA', 'Codice Commessa', 'Servizio', 'Codice Servizio', 'Ore Lavorate', 'Costo Orario', 'Note'],
                 totalRows: filtrato ? rawRows.length : raw.totalRows,
                 rows: transformed
             };
@@ -884,6 +887,10 @@ function renderTable(data, filterText) {
             let va = a[sortCol], vb = b[sortCol];
             if (va === null || va === undefined) va = '';
             if (vb === null || vb === undefined) vb = '';
+            // Date gg/mm/aaaa: confronto come aaaa-mm-gg
+            const dataIso = v => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(v)); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
+            const da = dataIso(va), db = dataIso(vb);
+            if (da && db) return da.localeCompare(db) * sortDir;
             const na = parseFloat(String(va).replace(',', '.'));
             const nb = parseFloat(String(vb).replace(',', '.'));
             if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
@@ -1271,6 +1278,39 @@ function moveAltroTooltip(event) {
     tooltip.style.left = (left + window.scrollX) + 'px';
     tooltip.style.top = (top + window.scrollY) + 'px';
 }
+
+// Barra orizzontale in cima a ogni griglia larga: si scorre a destra e sinistra senza scendere in fondo alla lista
+function aggiornaBarreSuperiori() {
+    const cont = document.getElementById('resultsContainer');
+    if (!cont) return;
+    cont.querySelectorAll('.table-wrapper').forEach(w => {
+        let barra = w.previousElementSibling;
+        if (!barra || !barra.classList.contains('scroll-top')) {
+            barra = document.createElement('div');
+            barra.className = 'scroll-top';
+            barra.appendChild(document.createElement('div'));
+            w.parentNode.insertBefore(barra, w);
+            let guida = null; // evita che le due barre si rimbalzino lo scroll
+            barra.addEventListener('scroll', () => { if (guida === w) return; guida = barra; w.scrollLeft = barra.scrollLeft; requestAnimationFrame(() => guida = null); });
+            w.addEventListener('scroll', () => { if (guida === barra) return; guida = w; barra.scrollLeft = w.scrollLeft; requestAnimationFrame(() => guida = null); });
+        }
+        const larga = w.scrollWidth > w.clientWidth + 1;
+        barra.hidden = !larga;
+        barra.firstChild.style.width = w.scrollWidth + 'px';
+        if (larga) barra.scrollLeft = w.scrollLeft;
+    });
+}
+let _barreTimer = null;
+function pianificaBarreSuperiori() { clearTimeout(_barreTimer); _barreTimer = setTimeout(aggiornaBarreSuperiori, 50); }
+document.addEventListener('DOMContentLoaded', () => {
+    const cont = document.getElementById('resultsContainer');
+    if (cont) new MutationObserver(muts => {
+        // ignora le modifiche fatte dalla barra stessa
+        if (muts.every(m => [...m.addedNodes, ...m.removedNodes].every(n => n.classList && n.classList.contains('scroll-top')))) return;
+        pianificaBarreSuperiori();
+    }).observe(cont, { childList: true, subtree: true });
+    window.addEventListener('resize', pianificaBarreSuperiori);
+});
 
 function hideServiceTooltip() {
     clearTimeout(_popupChiudiTimer); clearTimeout(_popupApriTimer);
