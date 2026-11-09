@@ -335,7 +335,9 @@
         .grid-drill-box thead th { position: static; cursor: default; padding: 4px 10px; font-size: 11px; color: #666; background: #f5f7fa; }
         .grid-drill-box tbody td { padding: 4px 10px; max-width: 420px; }
         .grid-drill-box td.num, .grid-drill-box th.num { text-align: right; }
-        .grid-drill-box td.note { white-space: normal; min-width: 200px; }
+        .grid-drill-box td.note { white-space: normal; min-width: 320px; max-width: 600px; }
+        /* Le celle che contengono un livello annidato non vanno limitate né tagliate */
+        .grid-drill-box tbody td.grid-drill-cell { max-width: none; overflow: visible; }
         .grid-drill-box tfoot td { font-weight: 700; padding: 4px 10px; border-top: 2px solid #dee2e6; }
         .grid-drill-box .empty { color: #999; font-size: 12px; }
 
