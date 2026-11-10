@@ -370,7 +370,9 @@
         .cal-table td.cal-ok    { background: #c8e6c9 !important; color: #1b5e20; font-weight: 600; }
         .cal-table td.cal-under { background: #fff9c4 !important; color: #7a5c00; font-weight: 600; }
         .cal-table td.cal-over  { background: #ffcdd2 !important; color: #b71c1c; font-weight: 600; }
-        .cal-table td.cal-weekend { background: #f0f0f0; }
+        /* Sabato e domenica: colonne grigie, ma le ore lavorate restano colorate come negli altri giorni */
+        .cal-table th.cal-weekend { background: #e2e6ec; color: #6b7785; }
+        .cal-table td.cal-val.cal-weekend:not(.has-data) { background: #eceef1; }
         .cal-table td.cal-total, .cal-table th.cal-total { background: #e3f2fd; font-weight: 700; border-left: 2px solid #90caf9; }
         .cal-table [data-cal] { cursor: help; }
         .cal-table td.cal-val[data-cal]:hover, .cal-table th[data-cal]:hover { outline: 2px solid #6a3d99; outline-offset: -2px; }
@@ -2405,12 +2407,12 @@ async function aggiornaCalendario() {
         if (!resp.ok) throw new Error('Errore query');
         const data = await resp.json();
 
-        // Tutti i giorni del mese con il loro day-of-week
+        // Tutti i giorni del mese, weekend compresi (evidenziati in grigio)
         const giorni = [];
         for (let d = 1; d <= lastDay; d++) {
             const dt = new Date(calAnno, calMese - 1, d);
             const dow = dt.getDay();
-            if (dow > 0 && dow < 6) giorni.push({ d, dt }); // solo lun-ven
+            giorni.push({ d, dt, we: dow === 0 || dow === 6 ? ' cal-weekend' : '' });
         }
 
         // Raggruppa ore per operatore e giorno
@@ -2463,9 +2465,9 @@ async function aggiornaCalendario() {
         html += '<thead><tr><th class="cal-op-header">Operatore</th>';
         // Al passaggio del mouse su un giorno: popup con i rapportini (di quell'operatore, o di tutti su intestazione e totali)
         const calHover = (opIdx, d) => ` data-cal onmouseenter="apriPopup(event, e => showCalTooltip(e,${opIdx},${d}))" onmouseleave="popupLasciato()"`;
-        for (const { d, dt } of giorni) {
+        for (const { d, dt, we } of giorni) {
             const hover = calRapportini[d] ? calHover(-1, d) : '';
-            html += `<th style="line-height:1.2;"${hover}>${d}<br><span style="font-weight:400;font-size:10px;opacity:0.75;">${GG_IT[dt.getDay()]}</span></th>`;
+            html += `<th class="${we.trim()}" style="line-height:1.2;"${hover}>${d}<br><span style="font-weight:400;font-size:10px;opacity:0.75;">${GG_IT[dt.getDay()]}</span></th>`;
         }
         html += '<th class="cal-total">Tot</th></tr></thead><tbody>';
 
@@ -2473,15 +2475,15 @@ async function aggiornaCalendario() {
         operatori.forEach((op, opIdx) => {
             html += `<tr><td class="cal-op">${escapeHtml(op)}</td>`;
             let totOp = 0;
-            for (const { d, dt } of giorni) {
+            for (const { d, dt, we } of giorni) {
                 const ore = oreMap[op][d] || 0;
                 totOp += ore;
                 totaliGiorno[d] = (totaliGiorno[d] || 0) + ore;
                 const attese = getOreAttese(op, dt);
                 const cls = calClass(ore, attese);
                 html += ore > 0
-                    ? `<td class="cal-val ${cls}"${calHover(opIdx, d)}>${fmtOre(ore)}</td>`
-                    : `<td class="cal-val"></td>`;
+                    ? `<td class="cal-val ${cls}${we}"${calHover(opIdx, d)}>${fmtOre(ore)}</td>`
+                    : `<td class="cal-val${we}"></td>`;
             }
             html += `<td class="cal-total">${fmtOre(totOp)}</td></tr>`;
         });
@@ -2489,12 +2491,12 @@ async function aggiornaCalendario() {
         // Riga totali
         html += '<tr style="border-top:2px solid #1b3a5c;"><td class="cal-op" style="font-weight:700;">TOTALE</td>';
         let grandTotal = 0;
-        for (const { d } of giorni) {
+        for (const { d, we } of giorni) {
             const t = totaliGiorno[d] || 0;
             grandTotal += t;
             html += t > 0
-                ? `<td class="cal-val has-data" style="font-weight:700;"${calHover(-1, d)}>${fmtOre(t)}</td>`
-                : '<td class="cal-val"></td>';
+                ? `<td class="cal-val has-data${we}" style="font-weight:700;"${calHover(-1, d)}>${fmtOre(t)}</td>`
+                : `<td class="cal-val${we}"></td>`;
         }
         html += `<td class="cal-total">${fmtOre(grandTotal)}</td></tr>`;
         html += '</tbody></table></div>';
